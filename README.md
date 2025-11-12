@@ -17,7 +17,7 @@ If the link is blocked or something, either download the file and open it, and i
 
 
 # Extra info:
-The reason this site can play videos like this is because it utilizes the YouTube api to get videos directly from YouTube, and then directly converts the video into YouTube's privay enhanced embed mode to make sure there are no tracking cookies until you actually click the watch button. And even then, there are very few. It's these cookies and the fact that they are linked to your school account/computer that is the main cause of the blocking of YouTube. This is just an automated way of putting the video id at the end of a youtube-nocookie link, with a nice UI and premade API keys to go along with it.
+The reason this site can play videos like this is because it utilizes the YouTube api to get videos directly from YouTube, and then directly converts the video into YouTube's privay enhanced embed mode to make sure there are no tracking cookies until you actually click the watch button. Even then, there are very few. It's these cookies and the fact that they are linked to your school account/computer that is the main cause of the blocking of YouTube. This is just an automated way of putting the video id at the end of a youtube-nocookie link, with a nice UI and premade API keys to go along with it.
 
 
 # My WeTube isn't working :(
