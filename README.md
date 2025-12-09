@@ -11,7 +11,8 @@ Since this is a file, it cannot be blocked due to it not having a URL (I still w
 
 Enjoy ;]
 
-Hosted here: https://consistent-lavender-00kybqpd0f.edgeone.app/ <br> Also Hosted here: https://wetube.hyperphp.com/ <br> https://sites.google.com/hicksvilleschools.org/wetube/home
+Hosted here: https://consistent-lavender-00kybqpd0f.edgeone.app/ <br> Also Hosted here: https://wetube.hyperphp.com/ <br> Also also also here: https://sites.google.com/hicksvilleschools.org/wetube/home <br> It's even a bookmarklet that replaces your current page with the code :] <br> <p>Drag this link to your bookmarks bar:</p>
+<a href="javascript:(function(){ if (window.trustedTypes && window.trustedTypes.createPolicy) { window.trustedTypes.createPolicy('default', { createHTML: (string, sink) => string, createScript: (string, sink) => string, createScriptURL: (string, sink) => string }); } fetch('https://raw.githubusercontent.com/ItIsSpade/wetube/refs/heads/main/WeTube_v1.4.1.html') .then(response => response.text()) .then(html => { document.open(); document.write(html); document.close(); }) .catch(err => alert('Could not load WeTube: ' + err)); })();">🚀 WeTube Loader</a>
 
 If the link is blocked or something, either download the file and open it, and it will still work sometimes, or find a static html hosting site that isn't blocked and host it yourself!
 
