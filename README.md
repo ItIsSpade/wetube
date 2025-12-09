@@ -11,8 +11,8 @@ Since this is a file, it cannot be blocked due to it not having a URL (I still w
 
 Enjoy ;]
 
-Hosted here: https://consistent-lavender-00kybqpd0f.edgeone.app/ <br> Also Hosted here: https://wetube.hyperphp.com/ <br> Also also also here: https://sites.google.com/hicksvilleschools.org/wetube/home <br> It's even a bookmarklet that replaces your current page with the code :] <br>
-https://sites.google.com/hicksvilleschools.org/wetube-bookmarklet/home
+Hosted here: https://consistent-lavender-00kybqpd0f.edgeone.app/ <br> Also Hosted here: https://wetube.hyperphp.com/ <br> Also also also here: https://sites.google.com/view/wetube2/wetube <br> It's even a bookmarklet that replaces your current page with the code :] <br>
+https://sites.google.com/view/wetube-ify-bookmarklet/home
 
 If the link is blocked or something, either download the file and open it, and it will still work sometimes, or find a static html hosting site that isn't blocked and host it yourself!
 
