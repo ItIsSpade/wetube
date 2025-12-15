@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>WeTube - YouTube Search & Watch</title>
-    <meta name="description" content="Search and watch YouTube videos with WeTube - A clean, modern YouTube interface"/>
+    <title>WeTube - Search & Watch</title>
+    <meta name="description" content="Search and watch YouTube videos with WeTube - A clean, modern YouTube interface powered by Invidious"/>
     <script src="https://www.youtube.com/iframe_api"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -146,7 +146,7 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            
+            cursor: pointer;
         }
 
         .logo-icon {
@@ -420,49 +420,88 @@
         .modal-content {
             background: white;
             border-radius: 12px;
-            max-width: 95vw;
-            max-height: 90vh;
-            width: 1200px;
+            width: 1040px; /* scaled up a bit more */
+            max-width: 96vw;
+            max-height: 85vh;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            position: relative;
         }
 
         .modal-header {
             display: flex;
-            justify-content: flex-end;
-            padding: 1rem;
+            align-items: center;
+            padding: 0.5rem 0.75rem;
             gap: 0.5rem;
+            position: relative;
+            padding-right: 56px; /* reserve space for absolute X */
         }
 
-        .close-btn {
+        .modal .close-btn {
             background: none;
             border: none;
-            font-size: 1.5rem;
+            font-size: 1.05rem; /* smaller */
             cursor: pointer;
-            padding: 0.5rem;
+            padding: 0.35rem 0.5rem;
             border-radius: 6px;
-            transition: background 0.3s ease;
-            color: #A9A9A9;
+            transition: background 0.2s ease;
+            color: #9ca3af;
         }
 
-        .close-btn:hover {
-            background: #f1f5f9;
+        .modal .close-btn:hover {
+            background: rgba(0,0,0,0.04);
         }
+
+        .modal-actions {
+            margin-left: auto; /* push actions to the right */
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: transparent;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            color: #6b7280;
+            padding: 6px;
+            border-radius: 6px;
+        }
+
+        .modal-close:hover { background: rgba(0,0,0,0.04); }
 
         .video-player-container {
-            padding: 0 1rem 1rem;
+            padding: 0.75rem 1rem 1rem; /* restored original padding so it looks 'in' the popup */
             display: flex;
             gap: 1rem;
+            justify-content: center; /* keep player centered inside modal */
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .video-player {
-            flex: 1;
+            position: relative;
+            width: 100%;
+            max-width: 1000px; /* allow the player to grow larger */
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            margin: 0 auto;
         }
 
         .video-iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: 500px;
+            height: 100%;
             border: none;
             border-radius: 8px;
+            background: #000;
         }
 
         .playlist-sidebar {
@@ -574,12 +613,136 @@
             }
         }
         #darkModeToggle { font-size: 1.5rem; }
+
+        /* Update Popup Styles */
+        .update-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .update-modal-content {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 20px;
+            max-width: 820px; /* slightly bigger popup */
+            width: 80%;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            transform: translateY(0);
+            animation: slideUp 0.3s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .update-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+            animation: bounce 1s infinite;
+        }
+
+        .update-title {
+            font-size: 1.8rem;
+            color: var(--navy);
+            margin-bottom: 1rem;
+            font-weight: 800;
+        }
+
+        .update-text {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .update-btn {
+            background: linear-gradient(135deg, var(--navy), var(--sky-blue));
+            color: white;
+            border: none;
+            padding: 0.9rem 1.6rem; /* bigger */
+            border-radius: 14px;
+            font-size: 1.15rem; /* larger */
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            box-shadow: 0 8px 24px rgba(14, 165, 233, 0.28);
+        }
+
+        .update-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(14, 165, 233, 0.45);
+        }
+        
+        body.dark-mode .update-modal-content {
+            background: #1e293b;
+            color: #e5e7eb;
+        }
+        body.dark-mode .update-title {
+            color: #60a5fa;
+        }
+        body.dark-mode .update-text {
+            color: #94a3b8;
+        }
+
+        /* New styles for update popup actions and close button */
+        .update-actions {
+            display: flex;
+            justify-content: center; /* center the button */
+            gap: 0.5rem;
+            margin-top: 1.25rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .update-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: transparent;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            color: #6b7280;
+            padding: 6px;
+            border-radius: 6px;
+        }
+
+        .update-close:hover {
+            background: rgba(0,0,0,0.04);
+        }
+
+        body.dark-mode .update-close {
+            color: #cbd5e1;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
     </style>
 </head>
-<body>
+<body class="dark-mode">
+    <div id="updatePopup" class="update-modal" style="display: none;">
+        <div class="update-modal-content">
+            <div class="update-icon">🚀</div>
+            <h2 class="update-title">Welcome to WeTube v1.5!</h2>
+            <p class="update-text">
+                The silly Youtube API that was limiting how many people could use it before, has just been replaced! This means you can now share this with other people who need it, and it will still work just fine for you! If anything has stopped working because of this MAJOR change, please let Zane know and he'll try to fix it :) Happy watching!
+            </p>
+            <div class="update-actions">
+                <button class="update-btn" onclick="closeUpdatePopup()">Let's Go!</button>
+            </div>
+        </div>
+    </div>
+
     <header class="header">
         <div class="header-content">
-            <div class="logo-section">
+            <div class="logo-section" onclick="window.location.reload()">
                 <div class="logo-icon">▶</div>
                 <h1 class="logo-text">WeTube</h1>
             </div>
@@ -607,7 +770,7 @@
                     <select id="sortSelect" class="search-dropdown">
                         <option value="relevance">Sort by: Relevance</option>
                         <option value="date">Sort by: Upload Date</option>
-                        <option value="viewCount">Sort by: View Count</option>
+                        <option value="views">Sort by: View Count</option>
                     </select>
                     <select id="searchTypeSelect" class="search-dropdown">
                         <option value="video">🔎 Video Search</option>
@@ -624,9 +787,11 @@
     <div id="videoModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <button class="close-btn" onclick="openVideoInNewTab()" title="Open in new tab">💭 New Tab</button>
-                <button class="close-btn" id="copyUrlBtn" onclick="copyVideoUrl()" title="Copy video URL">🔗 Copy URL</button>
-                <button class="close-btn" onclick="closeVideo()">✕</button>
+                <div class="modal-actions">
+                    <button class="close-btn" onclick="openVideoInNewTab()" title="Open in new tab">💭 New Tab</button>
+                    <button class="close-btn" id="copyUrlBtn" onclick="copyVideoUrl()" title="Copy video URL">🔗 Copy URL</button>
+                </div>
+                <button class="modal-close" onclick="closeVideo()" title="Close video">✕</button>
             </div>
             <div class="video-player-container">
                 <div class="video-player">
@@ -670,28 +835,45 @@
     </main>
 
     <script>
-    const API_KEYS = [
-        "AIzaSyD_cRa4GsiizvHSWG5886Y0yLOtihgqcdU",
-        "AIzaSyCWWeGoXPFUHJCHGVUjjJwDdfAaNWcL00o",
-        "AIzaSyBkvf5e1bppdMaJt-wp41BckfA__Eu1ETo",
-        "AIzaSyAdXOAGPq7iQ-LNBw08IpzhLnKa-mAL8_A",
-        "AIzaSyBFXqSoEyvvNva9mabu22zt2SRdwwlRG7s",
-        "AIzaSyDSh9WsSFFdDgCbz_MB9VlzJ0gPNAuo0fs",
-        "AIzaSyDlVnPjzc48Ym3ckSLh_5v22UNV74vuAB8",
-        "AIzaSyCVa3Mzbwnrk7mtN4ttzWR5hb95hxL5N2w",
-        "AIzaSyBjGVvEVH6F8e2y4YInt5Y2GMeEKb8jPA4",
-        "AIzaSyCzlrUaurv3Xr6ANT7vn4TJEJwlODAO8PE",
-        'AIzaSyDyLpE2rP6w7OX_2V4ckFlUfWFO-ba6OEQ',
-        'AIzaSyBfmsYMpt4-i0R7Rfuv544Bxt9MuAAVHkc',
-        'AIzaSyBICAqEWLdGtfVMiOoV-og9OnZua4n2Z_k',
-        'AIzaSyBstdSUX9Amnl4AnzoHTDoh4vqGh-enns4',
-        'AIzaSyAB_umuKIFCCuLGlNwJPd7XRT1pwHnXPt4'
-    ];
-    const MAX_RESULTS = 50;
+    const API_BASE = "https://zanecloud.ddns.net/api/v1";
     const HICKSVILLE_HANDLE = "@hicksvillevideoproductions1304";
 
+    // --- TRACKING LOGIC ---
+    const TRACKING_API_BASE = "https://zanecloud.ddns.net/tracker";
+
+    async function trackEvent(endpoint, body = {}) {
+        try {
+            const response = await fetch(`${TRACKING_API_BASE}${endpoint}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+            if (response.ok) {
+                console.log(`Tracking success: ${endpoint}`);
+            } else {
+                console.error(`Tracking failed: ${endpoint} - ${response.status} ${response.statusText}`);
+            }
+        } catch (e) {
+            console.error('Tracking error:', e);
+        }
+    }
+
+    // Track Focused Time
+    let accumulatedTime = 0;
+    setInterval(() => {
+        if (document.hasFocus()) {
+            accumulatedTime++;
+            // Send every 5 seconds
+            if (accumulatedTime >= 5) {
+                trackEvent('/api/track/focusedTime', { time: accumulatedTime });
+                accumulatedTime = 0;
+            }
+        }
+    }, 1000);
+
     let videos = [];
-    let videoDetails = {};
     let playlists = [];
     let currentPlaylistId = null;
     let currentPlaylistVideos = [];
@@ -700,18 +882,22 @@
     let youtubePlayer = null;
     let youtubePlayerReady = false;
 
-    let currentMode = "";
+    // Globals for Channel Pagination
+    let currentChannelName = "";
+    let currentChannelId = "";
+    
+    // Mode tracking
+    let currentMode = ""; // "search", "channel", "search-playlist", "channel-search", "playlist-view"
     let lastSearchQuery = "";
+    let currentPage = 1;
 
-    const COOLDOWN_MS = 5000;
+    const COOLDOWN_MS = 500;
     let lastRequestTime = 0;
 
-    // YouTube IFrame API callback
     function onYouTubeIframeAPIReady() {
         youtubePlayerReady = true;
     }
 
-    // Load autoplay setting from localStorage
     function loadAutoplaySetting() {
         try {
             const saved = localStorage.getItem('wetube-playlist-autoplay');
@@ -722,14 +908,12 @@
         }
     }
 
-    // Save autoplay setting to localStorage
     function saveAutoplaySetting() {
         try {
             localStorage.setItem('wetube-playlist-autoplay', playlistAutoplayEnabled.toString());
         } catch (e) {}
     }
 
-    // Update autoplay button UI
     function updateAutoplayButton() {
         const btn = document.getElementById("autoplayToggleBtn");
         if (btn) {
@@ -743,37 +927,25 @@
         }
     }
 
-    // Toggle autoplay setting
     function toggleAutoplay() {
         playlistAutoplayEnabled = !playlistAutoplayEnabled;
         saveAutoplaySetting();
         updateAutoplayButton();
     }
 
-    // Initialize YouTube player
     function initYouTubePlayer(videoId) {
         const iframe = document.getElementById("videoIframe");
         if (!iframe) return;
 
-        // Always start with regular iframe to ensure video plays immediately
         iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`;
 
-        // If autoplay is enabled, try to set up YouTube API for state detection
-        // But only if API is available and we want autoplay functionality
         if (playlistAutoplayEnabled && window.YT && window.YT.Player) {
-            // Wait a bit for the iframe to initialize, then create API player
             setTimeout(() => {
                 try {
-                    // Destroy existing player if any
                     if (youtubePlayer) {
-                        try {
-                            youtubePlayer.destroy();
-                        } catch (e) {}
+                        try { youtubePlayer.destroy(); } catch (e) {}
                         youtubePlayer = null;
                     }
-
-                    // Create YouTube Player API instance using the existing iframe
-                    // This will replace the iframe's functionality with API control
                     youtubePlayer = new YT.Player('videoIframe', {
                         videoId: videoId,
                         playerVars: {
@@ -788,50 +960,35 @@
                         }
                     });
                 } catch (e) {
-                    // If API fails, keep using iframe (video will still play)
                     console.error('YouTube API error:', e);
                     youtubePlayer = null;
                 }
             }, 500);
         } else {
-            // Autoplay disabled, destroy any existing player
             if (youtubePlayer) {
-                try {
-                    youtubePlayer.destroy();
-                } catch (e) {}
+                try { youtubePlayer.destroy(); } catch (e) {}
                 youtubePlayer = null;
             }
         }
     }
 
-    // Player ready callback
     function onPlayerReady(event) {
-        // Player is ready
     }
 
-    // Player state change callback
     function onPlayerStateChange(event) {
-        // State 0 = ENDED
         if (event.data === YT.PlayerState.ENDED) {
-            // If autoplay is enabled and we're in a playlist, play next video
             if (playlistAutoplayEnabled && currentPlaylistVideos.length > 0) {
                 playNextVideoInPlaylist();
             }
         }
     }
 
-    // Play next video in playlist
     function playNextVideoInPlaylist() {
         if (!currentPlaylistVideos || currentPlaylistVideos.length === 0) return;
-
-        // Find current video index
         const currentIndex = currentPlaylistVideos.findIndex(v => v.id === currentVideoId);
         if (currentIndex < 0) return;
-
-        // Calculate next index (loop back to start if at end)
         const nextIndex = (currentIndex + 1) % currentPlaylistVideos.length;
         const nextVideo = currentPlaylistVideos[nextIndex];
-
         if (nextVideo) {
             playPlaylistVideo(nextVideo.id, nextIndex);
         }
@@ -840,39 +997,21 @@
     function canMakeRequest() {
         const now = Date.now();
         if (now - lastRequestTime < COOLDOWN_MS) {
-            const wait = Math.ceil((COOLDOWN_MS - (now - lastRequestTime)) / 1000);
-            alert(`⏳ Please wait ${wait} more seconds before making another request.`);
             return false;
         }
         return true;
     }
 
-    async function fetchWithFallback(urlBuilder) {
-        let lastError = null;
-        for (const key of API_KEYS) {
-            try {
-                const url = urlBuilder(key);
-                const res = await fetch(url);
-                if (!res.ok) {
-                    lastError = new Error(`HTTP ${res.status} ${res.statusText}`);
-                    continue;
-                }
-                const data = await res.json();
-                if (data.error) {
-                    const reason = data.error.errors?.[0]?.reason || data.error.message;
-                    const retryable = ["quotaExceeded","dailyLimitExceeded","userRateLimitExceeded","forbidden","keyInvalid"];
-                    if (retryable.includes(reason)) {
-                        lastError = new Error(reason);
-                        continue;
-                    }
-                    throw new Error(data.error.message);
-                }
-                return data;
-            } catch (err) {
-                lastError = err;
+    async function fetchData(endpoint) {
+        try {
+            const res = await fetch(endpoint);
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status} ${res.statusText}`);
             }
+            return await res.json();
+        } catch (err) {
+            throw err;
         }
-        throw lastError;
     }
 
     function handleKeyPress(e) {
@@ -896,477 +1035,486 @@
         return num.toString();
     }
 
-    function formatDuration(duration) {
-        const m = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
-        if (!m) return "";
-        const h = (m[1] || "").replace("H", "");
-        const min = (m[2] || "0").replace("M", "").padStart(2, "0");
-        const s = (m[3] || "0").replace("S", "").padStart(2, "0");
-        return h ? `${h}:${min}:${s}` : `${min}:${s}`;
+    function formatSeconds(seconds) {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+        const mStr = h > 0 ? m.toString().padStart(2, '0') : m.toString();
+        const sStr = s.toString().padStart(2, '0');
+        return h > 0 ? `${h}:${mStr}:${sStr}` : `${mStr}:${sStr}`;
+    }
+
+    function formatTimestamp(ts) {
+        if (!ts) return "";
+        return new Date(ts * 1000).toLocaleDateString();
     }
 
     let currentVideoId = null;
-    let nextPageToken = null;
-
     let currentSort = "relevance";
     let currentSearchType = "video";
     let lastSort = "relevance";
     let lastSearchType = "video";
     let channelResults = [];
 
-    document.getElementById("sortSelect").addEventListener("change", function() {
-        currentSort = this.value;
-        if (currentMode === "search" && currentSearchType === "video") searchVideos();
-    });
-
-    document.getElementById("searchTypeSelect").addEventListener("change", function() {
-        currentSearchType = this.value;
-        if (currentSearchType === "video") {
-            searchVideos();
-        } else if (currentSearchType === "channel") {
-            searchChannels();
-        } else if (currentSearchType === "playlist") {
-            searchPlaylists();
+        // --- THUMBNAIL HELPER ---
+        function resolveThumbnail(url) {
+            if (!url) return "https://via.placeholder.com/320x180?text=No+Thumbnail";
+            if (url.startsWith('//')) return 'https:' + url;
+            if (url.startsWith('/')) return 'https://zanecloud.ddns.net' + url;
+            return url;
         }
-    });
-
-    async function searchPlaylists(pageToken = "") {
-        if (currentSearchType !== "playlist") return;
-        const q = document.getElementById("searchInput").value.trim();
-        if (!q) return;
-
-        if (currentMode === "search-playlist" && lastSearchQuery === q && !pageToken && currentSearchType === lastSearchType) {
-            return;
-        }
-
-        if (!canMakeRequest()) return;
-        lastRequestTime = Date.now();
-
-        currentMode = "search-playlist";
-        lastSearchQuery = q;
-        lastSearchType = currentSearchType;
-
-        const ld = document.getElementById("loadingDiv");
-        const ws = document.getElementById("welcomeScreen");
-        const grid = document.getElementById("videoGrid");
-        const loadMoreBtn = document.getElementById("loadMoreBtn");
-
-        ld.style.display = "block";
-        ws.style.display = "none";
-        if (!pageToken) grid.innerHTML = "";
-
-        try {
-            const searchData = await fetchWithFallback(
-                key => `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q)}&type=playlist&maxResults=${MAX_RESULTS}${pageToken ? `&pageToken=${pageToken}` : ""}&key=${key}`
-            );
-            const newPlaylists = searchData.items || [];
-            nextPageToken = searchData.nextPageToken || null;
-
-            if (!newPlaylists.length && !pageToken) {
-                grid.innerHTML = "<p>No playlists found.</p>";
-                loadMoreBtn.style.display = "none";
-                return;
-            }
-
-            if (pageToken) {
-                playlists = playlists.concat(newPlaylists);
+    
+        function getFallbackImage(img, videoId) {
+            if (videoId) {
+                // Try standard YouTube thumbnail if the proxy/local one fails
+                img.src = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+                img.onerror = function() {
+                    this.src = "https://via.placeholder.com/320x180?text=Error";
+                    this.onerror = null;
+                };
             } else {
-                playlists = newPlaylists;
+                img.src = "https://via.placeholder.com/320x180?text=Error";
+                img.onerror = null;
             }
-            displayPlaylists();
-
-            if (nextPageToken) {
-                loadMoreBtn.style.display = "inline-block";
-                loadMoreBtn.disabled = false;
-            } else {
-                loadMoreBtn.style.display = "none";
-            }
-        } catch (err) {
-            grid.innerHTML = `<p>Error searching playlists: ${err.message}</p>`;
-            loadMoreBtn.style.display = "none";
-        } finally {
-            ld.style.display = "none";
         }
-    }
-
-    function displayPlaylists() {
-        const grid = document.getElementById("videoGrid");
-        grid.innerHTML = playlists.map(p => {
-            const title = p.snippet.title.replace(/"/g, "&quot;");
-            const thumb = p.snippet.thumbnails?.medium?.url || p.snippet.thumbnails?.default?.url || "";
-            const playlistId = p.id.playlistId;
-            return `
-                <div class="playlist-card" onclick="openPlaylist('${playlistId}')">
-                    <div class="playlist-thumbnail">
-                        <img src="${thumb}" alt="${title}">
-                        <div class="play-overlay"></div>
-                        <div class="playlist-count">Playlist</div>
-                    </div>
-                    <div class="playlist-info">
-                        <h3 class="playlist-title">${title}</h3>
-                        <p class="playlist-meta">${p.snippet.channelTitle}</p>
-                    </div>
-                </div>`;
-        }).join("");
-    }
-
-    async function openPlaylist(playlistId) {
-        if (!canMakeRequest()) return;
-        lastRequestTime = Date.now();
-
-        currentPlaylistId = playlistId;
-        
-        const ld = document.getElementById("loadingDiv");
-        const sidebar = document.getElementById("playlistSidebar");
-        const playlistLoadingSpinner = document.getElementById("playlistLoadingSpinner");
-        const playlistLoadingCount = document.getElementById("playlistLoadingCount");
-        const playlistVideosDiv = document.getElementById("playlistVideos");
-        
-        // Show main loading indicator
-        ld.style.display = "block";
-        
-        // Show modal and sidebar immediately with loading state
-        const modal = document.getElementById("videoModal");
-        modal.style.display = "flex";
-        sidebar.style.display = "block";
-        sidebar.classList.add('loading');
-        playlistLoadingSpinner.style.display = "flex";
-        playlistVideosDiv.innerHTML = "";
-
-        try {
-            currentPlaylistVideos = [];
-            let nextPageToken = null;
-            let allItemsLoaded = false;
-            let pageCount = 0;
-
-            // Keep fetching until all items are loaded
-            while (!allItemsLoaded) {
-                pageCount++;
-                // Check if we need to wait due to rate limiting
-                const now = Date.now();
-                if (now - lastRequestTime < COOLDOWN_MS) {
-                    const wait = COOLDOWN_MS - (now - lastRequestTime);
-                    await new Promise(resolve => setTimeout(resolve, wait));
+    
+        // --- SORTING LOGIC ---
+        function clientSideSort(array, sortBy) {
+            if (sortBy === 'relevance') return array; 
+            
+            return [...array].sort((a, b) => {
+                if (sortBy === 'date') {
+                    const dateA = a.published || 0;
+                    const dateB = b.published || 0;
+                    return dateB - dateA;
+                } else if (sortBy === 'views') {
+                    const viewsA = a.viewCount || 0;
+                    const viewsB = b.viewCount || 0;
+                    return viewsB - viewsA;
                 }
-                lastRequestTime = Date.now();
-
-                // Update loading count
-                if (playlistLoadingCount) {
-                    playlistLoadingCount.textContent = `Loaded ${currentPlaylistVideos.length} videos...`;
-                }
-
-                const playlistData = await fetchWithFallback(
-                    key => `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=50${nextPageToken ? `&pageToken=${nextPageToken}` : ""}&key=${key}`
-                );
-
-                const newVideos = (playlistData.items || []).map(item => ({
-                    id: item.snippet.resourceId.videoId,
-                    title: item.snippet.title,
-                    thumbnail: item.snippet.thumbnails?.default?.url || "",
-                    channel: item.snippet.channelTitle
-                }));
-
-                currentPlaylistVideos = currentPlaylistVideos.concat(newVideos);
-                nextPageToken = playlistData.nextPageToken || null;
-                allItemsLoaded = !nextPageToken;
-
-                // Update loading count
-                if (playlistLoadingCount) {
-                    playlistLoadingCount.textContent = `Loaded ${currentPlaylistVideos.length} videos...`;
-                }
-            }
-
-            // Hide loading spinner and enable interactions
-            sidebar.classList.remove('loading');
-            playlistLoadingSpinner.style.display = "none";
-            ld.style.display = "none";
-
-            if (currentPlaylistVideos.length > 0) {
-                openVideoWithPlaylist(currentPlaylistVideos[0].id, 0);
-            } else {
-                playlistVideosDiv.innerHTML = "<p style='text-align:center;color:var(--text-muted);padding:2rem;'>No videos found in this playlist.</p>";
-            }
-        } catch (err) {
-            // Hide loading spinner and enable interactions
-            sidebar.classList.remove('loading');
-            playlistLoadingSpinner.style.display = "none";
-            ld.style.display = "none";
-            alert(`Error loading playlist: ${err.message}`);
-            playlistVideosDiv.innerHTML = `<p style='text-align:center;color:var(--text-muted);padding:2rem;'>Error loading playlist: ${err.message}</p>`;
+                return 0;
+            });
         }
-    }
-
-    function openVideoWithPlaylist(videoId, index) {
-        const modal = document.getElementById("videoModal");
-        const sidebar = document.getElementById("playlistSidebar");
-        const playlistVideosDiv = document.getElementById("playlistVideos");
-
-        modal.style.display = "flex";
-        currentVideoId = videoId;
-        currentPlaylistIndex = index;
-
-        sidebar.style.display = "block";
-        // Update autoplay button to reflect current state
-        updateAutoplayButton();
-        
-        playlistVideosDiv.innerHTML = currentPlaylistVideos.map((v, i) => `
-            <div class="playlist-video-item ${i === index ? 'active' : ''}" onclick="playPlaylistVideo('${v.id}', ${i})">
-                <img src="${v.thumbnail}" class="playlist-video-thumb" alt="${v.title}">
-                <div class="playlist-video-info">
-                    <div class="playlist-video-title">${v.title}</div>
-                    <div class="playlist-video-channel">${v.channel}</div>
-                </div>
-            </div>
-        `).join("");
-
-        // Initialize YouTube player for playlist (enables state detection)
-        initYouTubePlayer(videoId);
-    }
-
-    function playPlaylistVideo(videoId, index) {
-        currentVideoId = videoId;
-        currentPlaylistIndex = index;
-
-        // Update active state in UI
-        document.querySelectorAll('.playlist-video-item').forEach((item, i) => {
-            if (i === index) {
-                item.classList.add('active');
-            } else {
-                item.classList.remove('active');
+    
+        document.getElementById("sortSelect").addEventListener("change", function() {
+            currentSort = this.value;
+            
+            // Handle sorting for active Playlist View (Sidebar)
+            if (currentPlaylistVideos.length > 0 && document.getElementById("videoModal").style.display !== "none") {
+                currentPlaylistVideos = clientSideSort(currentPlaylistVideos, currentSort);
+                renderPlaylistSidebar();
+            } 
+            // Handle sorting for Channel View
+            else if (currentMode === "channel" && videos.length > 0) {
+                videos = clientSideSort(videos, currentSort);
+                displayVideos();
+            } 
+            // Handle Search Modes (refresh search)
+            else if (currentMode === "search" || currentMode === "search-playlist" || currentMode === "channel-search") {
+                if (document.getElementById("searchInput").value.trim()) {
+                    triggerSearch();
+                }
             }
         });
-
-        // Use YouTube player API if available and autoplay is enabled
-        if (playlistAutoplayEnabled && youtubePlayer && typeof youtubePlayer.loadVideoById === 'function') {
+    
+        document.getElementById("searchTypeSelect").addEventListener("change", function() {
+            currentSearchType = this.value;
+            if (document.getElementById("searchInput").value.trim()) {
+                triggerSearch();
+            }
+        });
+    
+        // --- SEARCH FUNCTIONS ---
+    
+        async function searchPlaylists(page = 1) {
+            if (currentSearchType !== "playlist") return;
+            const q = document.getElementById("searchInput").value.trim();
+            if (!q) return;
+    
+            if (currentMode === "search-playlist" && lastSearchQuery === q && page === 1 && currentSort === lastSort && currentSearchType === lastSearchType) {
+                return;
+            }
+    
+            if (!canMakeRequest()) await new Promise(r => setTimeout(r, COOLDOWN_MS));
+            lastRequestTime = Date.now();
+    
+            currentMode = "search-playlist";
+            lastSearchQuery = q;
+            lastSearchType = currentSearchType;
+            lastSort = currentSort;
+            currentPage = page;
+    
+            const ld = document.getElementById("loadingDiv");
+            const ws = document.getElementById("welcomeScreen");
+            const grid = document.getElementById("videoGrid");
+            const loadMoreBtn = document.getElementById("loadMoreBtn");
+    
+            if (page === 1) {
+                ld.style.display = "block";
+                ws.style.display = "none";
+                grid.innerHTML = "";
+                playlists = [];
+            }
+    
             try {
-                youtubePlayer.loadVideoById(videoId);
-                return;
-            } catch (e) {
-                // If player fails, reinitialize
-                console.error('Error loading video in player:', e);
-            }
-        }
-        
-        // Always use initYouTubePlayer which handles both cases
-        initYouTubePlayer(videoId);
-    }
-
-    function shufflePlaylist() {
-        if (!currentPlaylistVideos || currentPlaylistVideos.length === 0) return;
-        
-        // Fisher-Yates shuffle algorithm
-        const shuffled = [...currentPlaylistVideos];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        
-        currentPlaylistVideos = shuffled;
-        
-        // Find the current video's new index
-        const currentIndex = currentPlaylistVideos.findIndex(v => v.id === currentVideoId);
-        const newIndex = currentIndex >= 0 ? currentIndex : 0;
-        currentPlaylistIndex = newIndex;
-        
-        // Re-render the playlist sidebar
-        const playlistVideosDiv = document.getElementById("playlistVideos");
-        playlistVideosDiv.innerHTML = currentPlaylistVideos.map((v, i) => `
-            <div class="playlist-video-item ${i === newIndex ? 'active' : ''}" onclick="playPlaylistVideo('${v.id}', ${i})">
-                <img src="${v.thumbnail}" class="playlist-video-thumb" alt="${v.title}">
-                <div class="playlist-video-info">
-                    <div class="playlist-video-title">${v.title}</div>
-                    <div class="playlist-video-channel">${v.channel}</div>
-                </div>
-            </div>
-        `).join("");
-    }
-
-    async function searchVideos(pageToken = "") {
-        if (currentSearchType !== "video") return;
-        const q = document.getElementById("searchInput").value.trim();
-        if (!q) return;
-
-        if (currentMode === "search" && lastSearchQuery === q && !pageToken && currentSort === lastSort && currentSearchType === lastSearchType) {
-            return;
-        }
-
-        if (!canMakeRequest()) return;
-        lastRequestTime = Date.now();
-
-        currentMode = "search";
-        lastSearchQuery = q;
-        lastSort = currentSort;
-        lastSearchType = currentSearchType;
-
-        const ld = document.getElementById("loadingDiv");
-        const ws = document.getElementById("welcomeScreen");
-        const grid = document.getElementById("videoGrid");
-        const loadMoreBtn = document.getElementById("loadMoreBtn");
-
-        ld.style.display = "block";
-        ws.style.display = "none";
-        if (!pageToken) grid.innerHTML = "";
-
-        try {
-            const searchData = await fetchWithFallback(
-                key => `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q)}&type=video&maxResults=${MAX_RESULTS}&order=${currentSort}${pageToken ? `&pageToken=${pageToken}` : ""}&key=${key}`
-            );
-            const newVideos = searchData.items || [];
-            nextPageToken = searchData.nextPageToken || null;
-
-            if (!newVideos.length && !pageToken) {
-                grid.innerHTML = "<p>No results found.</p>";
+                const searchResults = await fetchData(
+                    `${API_BASE}/search?q=${encodeURIComponent(q)}&type=playlist&page=${page}&sort=${currentSort}`
+                );
+    
+                if (page === 1) trackEvent('/api/track/search');
+    
+                if (!searchResults.length && page === 1) {
+                    grid.innerHTML = "<p>No playlists found.</p>";
+                    loadMoreBtn.style.display = "none";
+                    ld.style.display = "none";
+                    return;
+                }
+    
+                playlists = playlists.concat(searchResults);
+                
+                displayPlaylists();
+    
+                if (searchResults.length > 0) {
+                    loadMoreBtn.style.display = "inline-block";
+                    loadMoreBtn.disabled = false;
+                } else {
+                    loadMoreBtn.style.display = "none";
+                }
+            } catch (err) {
+                if (page === 1) grid.innerHTML = `<p>Error searching playlists: ${err.message}</p>`;
                 loadMoreBtn.style.display = "none";
-                return;
+            } finally {
+                ld.style.display = "none";
             }
-            const ids = newVideos.map(v => v.id.videoId).filter(Boolean).join(",");
-            if (!ids) {
-                grid.innerHTML = "<p>No playable videos found.</p>";
-                loadMoreBtn.style.display = "none";
-                return;
-            }
-            const detailsData = await fetchWithFallback(
-                key => `https://www.googleapis.com/youtube/v3/videos?part=statistics,contentDetails&id=${ids}&key=${key}`
-            );
-            (detailsData.items || []).forEach(item => {
-                videoDetails[item.id] = { stats: item.statistics, content: item.contentDetails };
-            });
-
-            if (pageToken) {
-                videos = videos.concat(newVideos);
-            } else {
-                videos = newVideos;
-                videoDetails = {};
-                (detailsData.items || []).forEach(item => {
-                    videoDetails[item.id] = { stats: item.statistics, content: item.contentDetails };
-                });
-            }
-            displayVideos();
-
-            if (nextPageToken) {
-                loadMoreBtn.style.display = "inline-block";
-                loadMoreBtn.disabled = false;
-            } else {
-                loadMoreBtn.style.display = "none";
-            }
-        } catch (err) {
-            grid.innerHTML = `<p>Error searching videos: ${err.message}</p>`;
-            loadMoreBtn.style.display = "none";
-        } finally {
-            ld.style.display = "none";
         }
-    }
-
-    async function searchChannels(pageToken = "") {
-        if (currentSearchType !== "channel") return;
-        const q = document.getElementById("searchInput").value.trim();
-        if (!q) return;
-
-        if (currentMode === "channel-search" && lastSearchQuery === q && !pageToken && currentSearchType === lastSearchType) {
-            return;
-        }
-
-        if (!canMakeRequest()) return;
-        lastRequestTime = Date.now();
-
-        currentMode = "channel-search";
-        lastSearchQuery = q;
-        lastSearchType = currentSearchType;
-
-        const ld = document.getElementById("loadingDiv");
-        const ws = document.getElementById("welcomeScreen");
-        const grid = document.getElementById("videoGrid");
-        const loadMoreBtn = document.getElementById("loadMoreBtn");
-
-        ld.style.display = "block";
-        ws.style.display = "none";
-        if (!pageToken) grid.innerHTML = "";
-
-        try {
-            const searchData = await fetchWithFallback(
-                key => `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q)}&type=channel&maxResults=${MAX_RESULTS}${pageToken ? `&pageToken=${pageToken}` : ""}&key=${key}`
-            );
-            const newChannels = searchData.items || [];
-            nextPageToken = searchData.nextPageToken || null;
-
-            if (!newChannels.length && !pageToken) {
-                grid.innerHTML = "<p>No channels found.</p>";
-                loadMoreBtn.style.display = "none";
-                return;
-            }
-
-            if (pageToken) {
-                channelResults = channelResults.concat(newChannels);
-            } else {
-                channelResults = newChannels;
-            }
-            displayChannels();
-
-            if (nextPageToken) {
-                loadMoreBtn.style.display = "inline-block";
-                loadMoreBtn.disabled = false;
-            } else {
-                loadMoreBtn.style.display = "none";
-            }
-        } catch (err) {
-            grid.innerHTML = `<p>Error searching channels: ${err.message}</p>`;
-            loadMoreBtn.style.display = "none";
-        } finally {
-            ld.style.display = "none";
-        }
-    }
-
-    function displayChannels() {
-        const grid = document.getElementById("videoGrid");
-        grid.innerHTML = channelResults.map(c => {
-            const title = c.snippet.title.replace(/"/g, "&quot;");
-            const desc = c.snippet.description.replace(/"/g, "&quot;");
-            const thumb = c.snippet.thumbnails?.medium?.url || c.snippet.thumbnails?.default?.url || "";
-            const channelId = c.id.channelId;
-            return `
-                <div class="video-card" onclick="loadChannelVideosById('${channelId}')">
-                    <div class="video-thumbnail">
-                        <img src="${thumb}" alt="${title}">
-                        <div class="play-overlay">👤</div>
-                    </div>
-                    <div class="video-info">
-                        <h3 class="video-title">${title}</h3>
-                        <p class="video-channel">${desc.substring(0, 100)}${desc.length > 100 ? "..." : ""}</p>
-                    </div>
-                </div>`;
-        }).join("");
-    }
-
-    function displayVideos() {
-        const grid = document.getElementById("videoGrid");
-        grid.innerHTML = videos.map(v => {
-            const d = videoDetails[v.id.videoId] || {};
-            const views = formatViewCount(d.stats?.viewCount || "0");
-            const dur = formatDuration(d.content?.duration || "");
-            const date = new Date(v.snippet.publishedAt).toLocaleDateString();
-            const title = v.snippet.title.replace(/"/g, "&quot;");
-            const thumb = v.snippet.thumbnails?.medium?.url ||
-                          v.snippet.thumbnails?.default?.url || "";
-            return `
-                <div class="video-card" onclick="openVideo('${v.id.videoId}')">
-                    <div class="video-thumbnail">
-                        <img src="${thumb}" alt="${title}">
-                        <div class="play-overlay">▶</div>
-                        ${dur ? `<div class="video-duration">⏱ ${dur}</div>` : ""}
-                    </div>
-                    <div class="video-info">
-                        <h3 class="video-title">${title}</h3>
-                        <p class="video-channel">${v.snippet.channelTitle}</p>
-                        <div class="video-meta">
-                            <span>👁 ${views} views</span>
-                            <span>${date}</span>
+    
+        function displayPlaylists() {
+            const grid = document.getElementById("videoGrid");
+            grid.innerHTML = playlists.map(p => {
+                const title = p.title.replace(/"/g, "&quot;");
+                let rawThumb = p.playlistThumbnail || (p.videos && p.videos.length > 0 ? p.videos[0].videoThumbnails[0].url : "");
+                const thumb = resolveThumbnail(rawThumb);
+                
+                return `
+                    <div class="playlist-card" onclick="openPlaylist('${p.playlistId}')">
+                        <div class="playlist-thumbnail">
+                            <img src="${thumb}" alt="${title}" onerror="this.src='https://via.placeholder.com/300x200?text=No+Thumbnail'">
+                            <div class="play-overlay"></div>
+                            <div class="playlist-count">Playlist • ${p.videoCount} videos</div>
                         </div>
+                        <div class="playlist-info">
+                            <h3 class="playlist-title">${title}</h3>
+                            <p class="playlist-meta">${p.author}</p>
+                        </div>
+                    </div>`;
+            }).join("");
+        }
+    
+        async function openPlaylist(playlistId, page = 1) {
+            if (!canMakeRequest()) await new Promise(r => setTimeout(r, COOLDOWN_MS));
+            lastRequestTime = Date.now();
+    
+            currentPlaylistId = playlistId;
+            
+            const ld = document.getElementById("loadingDiv");
+            const sidebar = document.getElementById("playlistSidebar");
+            const playlistLoadingSpinner = document.getElementById("playlistLoadingSpinner");
+            const playlistVideosDiv = document.getElementById("playlistVideos");
+            
+            ld.style.display = "block";
+            const modal = document.getElementById("videoModal");
+            modal.style.display = "flex";
+            sidebar.style.display = "block";
+            sidebar.classList.add('loading');
+            playlistLoadingSpinner.style.display = "flex";
+            playlistVideosDiv.innerHTML = "";
+            
+            currentPlaylistVideos = [];
+    
+            try {
+                const playlistData = await fetchData(`${API_BASE}/playlists/${playlistId}?page=${page}`);
+                
+                const newVideos = (playlistData.videos || []).map(item => ({
+                    id: item.videoId,
+                    title: item.title,
+                    thumbnail: item.videoThumbnails ? item.videoThumbnails[0].url : "",
+                    channel: item.author,
+                    viewCount: item.viewCount,
+                    published: item.published
+                }));
+    
+                currentPlaylistVideos = newVideos;
+                // Apply current sort immediately if sidebar is open
+                if(currentSort !== 'relevance') {
+                    currentPlaylistVideos = clientSideSort(currentPlaylistVideos, currentSort);
+                }
+    
+                sidebar.classList.remove('loading');
+                playlistLoadingSpinner.style.display = "none";
+                ld.style.display = "none";
+    
+                if (currentPlaylistVideos.length > 0) {
+                    openVideoWithPlaylist(currentPlaylistVideos[0].id, 0);
+                } else {
+                    playlistVideosDiv.innerHTML = "<p style='text-align:center;color:var(--text-muted);padding:2rem;'>No videos found in this playlist.</p>";
+                }
+            } catch (err) {
+                sidebar.classList.remove('loading');
+                playlistLoadingSpinner.style.display = "none";
+                ld.style.display = "none";
+                alert(`Error loading playlist: ${err.message}`);
+            }
+        }
+    
+        function openVideoWithPlaylist(videoId, index) {
+            trackEvent('/api/track/videoClick');
+            const modal = document.getElementById("videoModal");
+            const sidebar = document.getElementById("playlistSidebar");
+            const playlistVideosDiv = document.getElementById("playlistVideos");
+    
+            modal.style.display = "flex";
+            currentVideoId = videoId;
+            currentPlaylistIndex = index;
+    
+            sidebar.style.display = "block";
+            updateAutoplayButton();
+            
+            renderPlaylistSidebar();
+    
+            initYouTubePlayer(videoId);
+        }
+        
+        function renderPlaylistSidebar() {
+            const playlistVideosDiv = document.getElementById("playlistVideos");
+            playlistVideosDiv.innerHTML = currentPlaylistVideos.map((v, i) => {
+                const thumb = resolveThumbnail(v.thumbnail);
+                return `
+                <div class="playlist-video-item ${i === currentPlaylistIndex ? 'active' : ''}" onclick="playPlaylistVideo('${v.id}', ${i})">
+                    <img src="${thumb}" class="playlist-video-thumb" alt="${v.title}" onerror="getFallbackImage(this, '${v.id}')">
+                    <div class="playlist-video-info">
+                        <div class="playlist-video-title">${v.title}</div>
+                        <div class="playlist-video-channel">${v.channel}</div>
                     </div>
-                </div>`;
-        }).join("");
-    }
-
+                </div>
+                `;
+            }).join("");
+        }
+    
+        function playPlaylistVideo(videoId, index) {
+            trackEvent('/api/track/videoClick');
+            currentVideoId = videoId;
+            currentPlaylistIndex = index;
+    
+            document.querySelectorAll('.playlist-video-item').forEach((item, i) => {
+                if (i === index) item.classList.add('active');
+                else item.classList.remove('active');
+            });
+    
+            if (playlistAutoplayEnabled && youtubePlayer && typeof youtubePlayer.loadVideoById === 'function') {
+                try {
+                    youtubePlayer.loadVideoById(videoId);
+                    return;
+                } catch (e) {}
+            }
+            
+            initYouTubePlayer(videoId);
+        }
+    
+        function shufflePlaylist() {
+            if (!currentPlaylistVideos || currentPlaylistVideos.length === 0) return;
+            
+            const shuffled = [...currentPlaylistVideos];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            
+            currentPlaylistVideos = shuffled;
+            
+            const currentIndex = currentPlaylistVideos.findIndex(v => v.id === currentVideoId);
+            const newIndex = currentIndex >= 0 ? currentIndex : 0;
+            currentPlaylistIndex = newIndex;
+            
+            renderPlaylistSidebar();
+        }
+    
+        async function searchVideos(page = 1) {
+            if (currentSearchType !== "video") return;
+            const q = document.getElementById("searchInput").value.trim();
+            if (!q) return;
+    
+            if (currentMode === "search" && lastSearchQuery === q && page === 1 && currentSort === lastSort && currentSearchType === lastSearchType) {
+                return;
+            }
+    
+            if (!canMakeRequest()) await new Promise(r => setTimeout(r, COOLDOWN_MS));
+            lastRequestTime = Date.now();
+    
+            currentMode = "search";
+            lastSearchQuery = q;
+            lastSort = currentSort;
+            lastSearchType = currentSearchType;
+            currentPage = page;
+    
+            const ld = document.getElementById("loadingDiv");
+            const ws = document.getElementById("welcomeScreen");
+            const grid = document.getElementById("videoGrid");
+            const loadMoreBtn = document.getElementById("loadMoreBtn");
+    
+            if (page === 1) {
+                ld.style.display = "block";
+                ws.style.display = "none";
+                grid.innerHTML = "";
+                videos = [];
+            }
+    
+            try {
+                const searchResults = await fetchData(
+                    `${API_BASE}/search?q=${encodeURIComponent(q)}&type=video&page=${page}&sort=${currentSort}`
+                );
+    
+                if (page === 1) trackEvent('/api/track/search');
+    
+                if (!searchResults.length && page === 1) {
+                    grid.innerHTML = "<p>No results found.</p>";
+                    loadMoreBtn.style.display = "none";
+                    ld.style.display = "none";
+                    return;
+                }
+    
+                videos = videos.concat(searchResults);
+                displayVideos();
+    
+                if (searchResults.length > 0) {
+                    loadMoreBtn.style.display = "inline-block";
+                    loadMoreBtn.disabled = false;
+                } else {
+                    loadMoreBtn.style.display = "none";
+                }
+            } catch (err) {
+                if (page === 1) grid.innerHTML = `<p>Error searching videos: ${err.message}</p>`;
+                loadMoreBtn.style.display = "none";
+            } finally {
+                ld.style.display = "none";
+            }
+        }
+    
+        async function searchChannels(page = 1) {
+            if (currentSearchType !== "channel") return;
+            const q = document.getElementById("searchInput").value.trim();
+            if (!q) return;
+    
+            if (currentMode === "channel-search" && lastSearchQuery === q && page === 1 && currentSort === lastSort) {
+                return;
+            }
+    
+            if (!canMakeRequest()) await new Promise(r => setTimeout(r, COOLDOWN_MS));
+            lastRequestTime = Date.now();
+    
+            currentMode = "channel-search";
+            lastSearchQuery = q;
+            lastSearchType = currentSearchType;
+            lastSort = currentSort;
+            currentPage = page;
+    
+            const ld = document.getElementById("loadingDiv");
+            const ws = document.getElementById("welcomeScreen");
+            const grid = document.getElementById("videoGrid");
+            const loadMoreBtn = document.getElementById("loadMoreBtn");
+    
+            if (page === 1) {
+                ld.style.display = "block";
+                ws.style.display = "none";
+                grid.innerHTML = "";
+                channelResults = [];
+            }
+    
+            try {
+                const searchResults = await fetchData(
+                    `${API_BASE}/search?q=${encodeURIComponent(q)}&type=channel&page=${page}&sort=${currentSort}`
+                );
+    
+                if (page === 1) trackEvent('/api/track/search');
+    
+                if (!searchResults.length && page === 1) {
+                    grid.innerHTML = "<p>No channels found.</p>";
+                    loadMoreBtn.style.display = "none";
+                    ld.style.display = "none";
+                    return;
+                }
+    
+                channelResults = channelResults.concat(searchResults);
+                displayChannels();
+    
+                if (searchResults.length > 0) {
+                    loadMoreBtn.style.display = "inline-block";
+                    loadMoreBtn.disabled = false;
+                } else {
+                    loadMoreBtn.style.display = "none";
+                }
+            } catch (err) {
+                if (page === 1) grid.innerHTML = `<p>Error searching channels: ${err.message}</p>`;
+                loadMoreBtn.style.display = "none";
+            } finally {
+                ld.style.display = "none";
+            }
+        }
+    
+        function displayChannels() {
+            const grid = document.getElementById("videoGrid");
+            grid.innerHTML = channelResults.map(c => {
+                const title = c.author.replace(/"/g, "&quot;");
+                const safeTitle = title.replace(/'/g, "\\'"); 
+                const desc = (c.description || "").replace(/"/g, "&quot;");
+                let rawThumb = c.authorThumbnails ? c.authorThumbnails[c.authorThumbnails.length - 1].url : "";
+                const thumb = resolveThumbnail(rawThumb);
+                const channelId = c.authorId;
+                return `
+                    <div class="video-card" onclick="loadChannelVideosById('${channelId}', '${safeTitle}')">
+                        <div class="video-thumbnail">
+                            <img src="${thumb}" alt="${title}" style="object-fit: contain; padding: 10px; background: #000;" onerror="this.src='https://via.placeholder.com/300x200?text=No+Channel+Icon'">
+                            <div class="play-overlay">👤</div>
+                        </div>
+                        <div class="video-info">
+                            <h3 class="video-title">${title}</h3>
+                            <p class="video-channel">Subscribers: ${formatViewCount(c.subCount)}</p>
+                            <p class="video-channel">${desc.substring(0, 100)}${desc.length > 100 ? "..." : ""}</p>
+                        </div>
+                    </div>`;
+            }).join("");
+        }
+    
+        function displayVideos() {
+            const grid = document.getElementById("videoGrid");
+            grid.innerHTML = videos.map(v => {
+                const views = formatViewCount(v.viewCount);
+                const dur = formatSeconds(v.lengthSeconds);
+                const date = v.publishedText || formatTimestamp(v.published);
+                const title = v.title.replace(/"/g, "&quot;");
+                let rawThumb = v.videoThumbnails ? v.videoThumbnails[0].url : "";
+                // Use resolveThumbnail to ensure absolute URL
+                const thumb = resolveThumbnail(rawThumb);
+                
+                return `
+                    <div class="video-card" onclick="openVideo('${v.videoId}')">
+                        <div class="video-thumbnail">
+                            <img src="${thumb}" alt="${title}" onerror="getFallbackImage(this, '${v.videoId}')">
+                            <div class="play-overlay">▶</div>
+                            ${dur ? `<div class="video-duration">⏱ ${dur}</div>` : ""}
+                        </div>
+                        <div class="video-info">
+                            <h3 class="video-title">${title}</h3>
+                            <p class="video-channel">${v.author}</p>
+                            <div class="video-meta">
+                                <span>👁 ${views} views</span>
+                                <span>${date}</span>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join("");
+        }
     function openVideo(id) {
+        trackEvent('/api/track/videoClick');
         const modal = document.getElementById("videoModal");
         const iframe = document.getElementById("videoIframe");
         const sidebar = document.getElementById("playlistSidebar");
@@ -1378,28 +1526,20 @@
         currentPlaylistVideos = [];
         currentPlaylistIndex = 0;
 
-        // Destroy YouTube player when not in playlist mode (use simple iframe)
         if (youtubePlayer) {
-            try {
-                youtubePlayer.destroy();
-            } catch (e) {}
+            try { youtubePlayer.destroy(); } catch (e) {}
             youtubePlayer = null;
         }
 
-        // Use simple iframe for single video (no autoplay needed)
         iframe.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&modestbranding=1`;
     }
 
     function closeVideo() {
         const modal = document.getElementById("videoModal");
         const iframe = document.getElementById("videoIframe");
-        const container = document.getElementById("videoPlayerContainer");
         
-        // Destroy YouTube player
         if (youtubePlayer) {
-            try {
-                youtubePlayer.destroy();
-            } catch (e) {}
+            try { youtubePlayer.destroy(); } catch (e) {}
             youtubePlayer = null;
         }
 
@@ -1491,166 +1631,309 @@
     }
 
     function loadMoreVideos() {
-        const loadMoreBtn = document.getElementById("loadMoreBtn");
-        if (!nextPageToken) return;
         if (!canMakeRequest()) return;
-        loadMoreBtn.disabled = true;
-        if (currentMode === "search" && currentSearchType === "video") {
-            searchVideos(nextPageToken);
+        
+        if (currentMode === "search") {
+            currentPage++;
+            searchVideos(currentPage);
         } else if (currentMode === "channel") {
-            if (typeof videos[0]?.snippet?.channelId === "string") {
-                loadChannelVideosById(videos[0].snippet.channelId, nextPageToken);
+            currentPage++;
+            if (currentChannelId && currentChannelName) {
+                 loadChannelVideosById(currentChannelId, currentChannelName, currentPage);
             } else {
-                loadChannelVideos(nextPageToken);
+                loadChannelVideos(currentPage);
             }
         } else if (currentMode === "channel-search") {
-            searchChannels(nextPageToken);
+            currentPage++;
+            searchChannels(currentPage);
         } else if (currentMode === "search-playlist") {
-            searchPlaylists(nextPageToken);
+            currentPage++;
+            searchPlaylists(currentPage);
         }
     }
 
-    async function loadChannelVideos(pageToken = "") {
-        if (!canMakeRequest()) return;
+    async function loadChannelVideos(page = 1) {
+        if (!canMakeRequest()) await new Promise(r => setTimeout(r, COOLDOWN_MS));
         lastRequestTime = Date.now();
 
         currentMode = "channel";
         lastSearchQuery = "";
+        currentPage = page;
+        
+        currentChannelName = "Hicksville Video Productions";
+        currentChannelId = "UCNH7ejvJvMRcHAwKpyV_ijw"; // Hardcoded for this specific button
 
         const ld = document.getElementById("loadingDiv");
         const ws = document.getElementById("welcomeScreen");
         const grid = document.getElementById("videoGrid");
         const loadMoreBtn = document.getElementById("loadMoreBtn");
 
-        ld.style.display = "block";
-        ws.style.display = "none";
-        if (!pageToken) grid.innerHTML = "";
+        if (page === 1) {
+            ld.style.display = "block";
+            ws.style.display = "none";
+            grid.innerHTML = "";
+            videos = [];
+        }
 
         try {
-            const channelData = await fetchWithFallback(
-                key => `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(HICKSVILLE_HANDLE)}&type=channel&maxResults=1&key=${key}`
-            );
-            
-            if (!channelData.items || !channelData.items.length) {
-                grid.innerHTML = "<p>Channel not found.</p>";
+            // We want to present 20 videos per user-visible page.
+            const TARGET_PER_PAGE = 20;
+            let fetchPage = page;
+            let collected = [];
+            const seen = new Set();
+
+            // Helper: fetch one backend page using a few fallbacks (keeps previous logic localized)
+            async function fetchOneBackendPage(p) {
+                try {
+                    // Try channel-specific endpoint first (often returns multiple videos per page)
+                    try {
+                        const channelVideosUrl = `${API_BASE}/channels/${currentChannelId}/videos?page=${p}`;
+                        const channelVideos = await fetchData(channelVideosUrl).catch(() => null) || [];
+                        if (channelVideos && channelVideos.length) {
+                            console.debug('fetchOneBackendPage: channel endpoint', channelVideosUrl, 'count', channelVideos.length);
+                            return channelVideos.map(item => ({
+                                videoId: item.videoId || item.id || item.video_id,
+                                title: item.title,
+                                videoThumbnails: item.videoThumbnails || item.thumbnails || [],
+                                author: currentChannelName,
+                                authorId: currentChannelId,
+                                viewCount: item.viewCount,
+                                published: item.published
+                            }));
+                        }
+                    } catch (e) { /* ignore */ }
+
+                    const searchUrl = `${API_BASE}/search?q=${encodeURIComponent('"Hicksville Video Productions"')}&type=video&page=${p}&sort=date`;
+                    const searchData = await fetchData(searchUrl).catch(() => null) || [];
+                    console.debug('fetchOneBackendPage: search', searchUrl, 'count', (searchData || []).length);
+
+                    // Prefer items from the known channel id
+                    let pageItems = (searchData || []).filter(v => v.authorId === currentChannelId);
+
+                    // If none, try handle fallback
+                    if (!pageItems.length) {
+                        const fallbackUrl = `${API_BASE}/search?q=${encodeURIComponent(HICKSVILLE_HANDLE)}&type=video&page=${p}`;
+                        const fallbackData = await fetchData(fallbackUrl).catch(() => null) || [];
+                        console.debug('fetchOneBackendPage: handle fallback', fallbackUrl, 'count', (fallbackData || []).length);
+                        if (fallbackData && fallbackData.length) pageItems = fallbackData;
+                    }
+
+                    return pageItems;
+                } catch (e) {
+                    console.debug('fetchOneBackendPage error', e);
+                    return [];
+                }
+            }
+
+            const MAX_BACKEND_PAGES = 10;
+            let backendPagesTried = 0;
+            while (collected.length < TARGET_PER_PAGE && backendPagesTried < MAX_BACKEND_PAGES) {
+                const pageItems = await fetchOneBackendPage(fetchPage);
+                if (!pageItems || pageItems.length === 0) break;
+
+                for (const it of pageItems) {
+                    const id = it.videoId || it.id || it.video_id || (it.videoThumbnails && it.videoThumbnails[0] && it.videoThumbnails[0].url) || null;
+                    const vid = it.videoId || it.id || it.videoId || id;
+                    if (!vid) continue;
+                    if (seen.has(vid)) continue;
+                    seen.add(vid);
+                    collected.push({
+                        id: vid,
+                        videoId: vid,
+                        title: it.title || it.videoTitle || '' ,
+                        thumbnail: (it.videoThumbnails && it.videoThumbnails[0] && it.videoThumbnails[0].url) || it.thumbnail || '',
+                        author: it.author || currentChannelName,
+                        authorId: it.authorId || currentChannelId,
+                        viewCount: it.viewCount,
+                        published: it.published
+                    });
+                    if (collected.length >= TARGET_PER_PAGE) break;
+                }
+
+                // If backend returned fewer than expected, try next backend page
+                fetchPage++;
+                backendPagesTried++;
+            }
+
+            // If nothing collected on first page, show message
+            if (collected.length === 0 && page === 1) {
+                grid.innerHTML = "<p>No videos found.</p>";
                 loadMoreBtn.style.display = "none";
+                ld.style.display = "none";
                 return;
             }
 
-            const channelId = channelData.items[0].snippet.channelId;
-            
-            const searchData = await fetchWithFallback(
-                key => `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&channelId=${channelId}&order=date&maxResults=${MAX_RESULTS}${pageToken ? `&pageToken=${pageToken}` : ""}&key=${key}`
-            );
-            const newVideos = searchData.items || [];
-            nextPageToken = searchData.nextPageToken || null;
+            // Append collected videos (up to TARGET_PER_PAGE)
+            videos = videos.concat(collected.slice(0, TARGET_PER_PAGE));
+            videos = clientSideSort(videos, currentSort);
 
-            if (!newVideos.length && !pageToken) {
-                grid.innerHTML = "<p>No videos found for this channel.</p>";
-                loadMoreBtn.style.display = "none";
-                return;
-            }
-            const ids = newVideos.map(v => v.id.videoId).filter(Boolean).join(",");
-            if (!ids) {
-                grid.innerHTML = "<p>No playable videos found.</p>";
-                loadMoreBtn.style.display = "none";
-                return;
-            }
-            const detailsData = await fetchWithFallback(
-                key => `https://www.googleapis.com/youtube/v3/videos?part=statistics,contentDetails&id=${ids}&key=${key}`
-            );
-            (detailsData.items || []).forEach(item => {
-                videoDetails[item.id] = { stats: item.statistics, content: item.contentDetails };
-            });
-
-            if (pageToken) {
-                videos = videos.concat(newVideos);
-            } else {
-                videos = newVideos;
-                videoDetails = {};
-                (detailsData.items || []).forEach(item => {
-                    videoDetails[item.id] = { stats: item.statistics, content: item.contentDetails };
-                });
-            }
             displayVideos();
 
-            if (nextPageToken) {
+            // Update currentPage to the last backend page we consumed
+            currentPage = Math.max(1, fetchPage - 1);
+
+            // Show load more if we fetched at least one backend page (there may be more)
+            if (collected.length >= TARGET_PER_PAGE || fetchPage > page) {
                 loadMoreBtn.style.display = "inline-block";
                 loadMoreBtn.disabled = false;
             } else {
                 loadMoreBtn.style.display = "none";
             }
         } catch (err) {
-            grid.innerHTML = `<p>Error loading channel videos: ${err.message}</p>`;
+            console.error(err);
+            if (page === 1) grid.innerHTML = `<p>Error loading videos: ${err.message}</p>`;
             loadMoreBtn.style.display = "none";
         } finally {
-            ld.style.display = "none";
+            if (page === 1) ld.style.display = "none";
         }
     }
 
-    async function loadChannelVideosById(channelId, pageToken = "") {
-        if (!canMakeRequest()) return;
+    async function loadChannelVideosById(channelId, channelName, page = 1) {
+        if (!canMakeRequest()) await new Promise(r => setTimeout(r, COOLDOWN_MS));
         lastRequestTime = Date.now();
 
         currentMode = "channel";
         lastSearchQuery = "";
+        currentPage = page;
+        
+        currentChannelName = channelName; 
+        currentChannelId = channelId;
 
         const ld = document.getElementById("loadingDiv");
         const ws = document.getElementById("welcomeScreen");
         const grid = document.getElementById("videoGrid");
         const loadMoreBtn = document.getElementById("loadMoreBtn");
 
-        ld.style.display = "block";
-        ws.style.display = "none";
-        if (!pageToken) grid.innerHTML = "";
+        if (page === 1) {
+            ld.style.display = "block";
+            ws.style.display = "none";
+            grid.innerHTML = "";
+            videos = [];
+        }
 
         try {
-            const searchData = await fetchWithFallback(
-                key => `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&channelId=${channelId}&order=date&maxResults=${MAX_RESULTS}${pageToken ? `&pageToken=${pageToken}` : ""}&key=${key}`
-            );
-            const newVideos = searchData.items || [];
-            nextPageToken = searchData.nextPageToken || null;
+            // Aim: always load ~20 videos per visible "page" and let Load More fetch the next ~20.
+            const TARGET_PER_PAGE = 20;
+            let fetchPage = page;
+            let collected = [];
+            const seen = new Set();
 
-            if (!newVideos.length && !pageToken) {
-                grid.innerHTML = "<p>No videos found for this channel.</p>";
+            // Helper: try various backend searches for one backend page and return raw items
+            async function fetchBackendPage(p) {
+                try {
+                    // Try channel-specific endpoint first
+                    try {
+                        const channelVideosUrl = `${API_BASE}/channels/${channelId}/videos?page=${p}`;
+                        const channelVideos = await fetchData(channelVideosUrl).catch(() => null) || [];
+                        if (channelVideos && channelVideos.length) {
+                            console.debug('fetchBackendPage: channel endpoint', channelVideosUrl, 'count', channelVideos.length);
+                            return channelVideos.map(item => ({
+                                videoId: item.videoId || item.id || item.video_id,
+                                title: item.title,
+                                videoThumbnails: item.videoThumbnails || item.thumbnails || [],
+                                author: channelName,
+                                authorId: channelId,
+                                viewCount: item.viewCount,
+                                published: item.published
+                            }));
+                        }
+                    } catch (e) { /* ignore */ }
+
+                    const query = `"${channelName}"`;
+                    const searchUrl = `${API_BASE}/search?q=${encodeURIComponent(query)}&type=video&page=${p}&sort=date`;
+                    const newVideos = await fetchData(searchUrl).catch(() => null) || [];
+                    console.debug('fetchBackendPage: search', searchUrl, 'count', (newVideos || []).length);
+
+                    // Try relaxed matching first
+                    let filtered = (newVideos || []).filter(v => {
+                        try {
+                            if (!v) return false;
+                            if (v.authorId && v.authorId === channelId) return true;
+                            if (v.author && v.author === channelName) return true;
+                            return false;
+                        } catch (e) { return false; }
+                    });
+
+                    // If still empty, try channelId param search
+                    if ((!filtered || filtered.length === 0)) {
+                        try {
+                            const byIdUrl = `${API_BASE}/search?channelId=${encodeURIComponent(channelId)}&type=video&page=${p}&sort=date`;
+                            const byIdResults = await fetchData(byIdUrl).catch(() => null) || [];
+                            console.debug('fetchBackendPage: byId', byIdUrl, 'count', (byIdResults || []).length);
+                            if (byIdResults && byIdResults.length) filtered = byIdResults;
+                        } catch (e) { /* ignore */ }
+                    }
+
+                    // If still empty, try raw id in query
+                    if ((!filtered || filtered.length === 0)) {
+                        try {
+                            const idQueryUrl = `${API_BASE}/search?q=${encodeURIComponent(channelId)}&type=video&page=${p}&sort=date`;
+                            const idQueryResults = await fetchData(idQueryUrl).catch(() => null) || [];
+                            console.debug('fetchBackendPage: idQuery', idQueryUrl, 'count', (idQueryResults || []).length);
+                            if (idQueryResults.length) filtered = idQueryResults;
+                        } catch (e) { /* ignore */ }
+                    }
+
+                    // Final fallback: accept raw newVideos if nothing else matched
+                    if ((!filtered || filtered.length === 0) && newVideos.length > 0) filtered = newVideos;
+
+                    return filtered || [];
+                } catch (e) { console.debug('fetchBackendPage error', e); return []; }
+            }
+
+            const MAX_BACKEND_PAGES = 10;
+            let backendPagesTried = 0;
+            while (collected.length < TARGET_PER_PAGE && backendPagesTried < MAX_BACKEND_PAGES) {
+                const pageItems = await fetchBackendPage(fetchPage);
+                if (!pageItems || pageItems.length === 0) break;
+
+                for (const it of pageItems) {
+                    const vid = it.videoId || it.id || it.videoId || (it.videoThumbnails && it.videoThumbnails[0] && it.videoThumbnails[0].url) || null;
+                    if (!vid) continue;
+                    if (seen.has(vid)) continue;
+                    seen.add(vid);
+                    collected.push({
+                        id: vid,
+                        videoId: vid,
+                        title: it.title || '',
+                        thumbnail: (it.videoThumbnails && it.videoThumbnails[0] && it.videoThumbnails[0].url) || it.thumbnail || '',
+                        author: it.author || channelName,
+                        authorId: it.authorId || channelId,
+                        viewCount: it.viewCount,
+                        published: it.published
+                    });
+                    if (collected.length >= TARGET_PER_PAGE) break;
+                }
+                fetchPage++;
+                backendPagesTried++;
+            }
+
+            if (collected.length === 0 && page === 1) {
+                grid.innerHTML = "<p>No videos found for this channel via search.</p>";
                 loadMoreBtn.style.display = "none";
+                ld.style.display = "none";
                 return;
             }
-            const ids = newVideos.map(v => v.id.videoId).filter(Boolean).join(",");
-            if (!ids) {
-                grid.innerHTML = "<p>No playable videos found.</p>";
-                loadMoreBtn.style.display = "none";
-                return;
-            }
-            const detailsData = await fetchWithFallback(
-                key => `https://www.googleapis.com/youtube/v3/videos?part=statistics,contentDetails&id=${ids}&key=${key}`
-            );
-            (detailsData.items || []).forEach(item => {
-                videoDetails[item.id] = { stats: item.statistics, content: item.contentDetails };
-            });
 
-            if (pageToken) {
-                videos = videos.concat(newVideos);
-            } else {
-                videos = newVideos;
-                videoDetails = {};
-                (detailsData.items || []).forEach(item => {
-                    videoDetails[item.id] = { stats: item.statistics, content: item.contentDetails };
-                });
-            }
+            videos = videos.concat(collected.slice(0, TARGET_PER_PAGE));
+            videos = clientSideSort(videos, currentSort);
+
             displayVideos();
 
-            if (nextPageToken) {
+            // Update currentPage to last backend page consumed
+            currentPage = Math.max(1, fetchPage - 1);
+
+            if (collected.length >= TARGET_PER_PAGE || fetchPage > page) {
                 loadMoreBtn.style.display = "inline-block";
                 loadMoreBtn.disabled = false;
             } else {
                 loadMoreBtn.style.display = "none";
             }
         } catch (err) {
-            grid.innerHTML = `<p>Error loading channel videos: ${err.message}</p>`;
+            if (page === 1) grid.innerHTML = `<p>Error loading channel videos: ${err.message}</p>`;
             loadMoreBtn.style.display = "none";
         } finally {
-            ld.style.display = "none";
+            if (page === 1) ld.style.display = "none";
         }
     }
 
@@ -1658,27 +1941,68 @@
         const body = document.body;
         body.classList.toggle('dark-mode');
         if (body.classList.contains('dark-mode')) {
-            try {
-                localStorage.setItem('wetube-dark', '1');
-            } catch (e) {}
+            try { localStorage.setItem('wetube-dark', '1'); } catch (e) {}
             document.getElementById('darkModeToggle').textContent = "☀️";
         } else {
-            try {
-                localStorage.removeItem('wetube-dark');
-            } catch (e) {}
+            try { localStorage.removeItem('wetube-dark'); } catch (e) {}
             document.getElementById('darkModeToggle').textContent = "🌙";
         }
     }
 
+    function initFilters() {
+        // Force reset filters on load as requested
+        const sortSelect = document.getElementById('sortSelect');
+        const typeSelect = document.getElementById('searchTypeSelect');
+        if (sortSelect) sortSelect.value = 'relevance';
+        if (typeSelect) typeSelect.value = 'video';
+        currentSort = 'relevance';
+        currentSearchType = 'video';
+    }
+
+    const CURRENT_APP_VERSION = "1.5";
+
+    function checkAppVersion() {
+        try {
+            const storedVersion = localStorage.getItem('wetube_version');
+            if (storedVersion !== CURRENT_APP_VERSION) {
+                document.getElementById('updatePopup').style.display = 'flex';
+            }
+        } catch (e) {
+            // If localStorage fails, we might as well show the popup or suppress error
+            // For safety, let's show it if we can't verify version
+            document.getElementById('updatePopup').style.display = 'flex';
+        }
+    }
+
+    function closeUpdatePopup() {
+        try {
+            localStorage.setItem('wetube_version', CURRENT_APP_VERSION);
+        } catch (e) {
+            console.warn('Could not save version to localStorage:', e);
+        }
+        document.getElementById('updatePopup').style.display = 'none';
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
         try {
-            if (localStorage.getItem('wetube-dark')) {
+            // Default to dark mode when user has no explicit preference stored
+            const stored = localStorage.getItem('wetube-dark');
+            const isDarkMode = stored === null ? true : stored === '1';
+            if (isDarkMode) {
                 document.body.classList.add('dark-mode');
                 document.getElementById('darkModeToggle').textContent = "☀️";
+                try { localStorage.setItem('wetube-dark', '1'); } catch (e) {}
+            } else {
+                document.body.classList.remove('dark-mode');
+                document.getElementById('darkModeToggle').textContent = "🌙";
             }
-        } catch (e) {}
-        // Load autoplay setting
+        } catch (e) {
+            console.warn('Error applying dark mode state:', e);
+        }
+
         loadAutoplaySetting();
+        initFilters();
+        checkAppVersion();
     });
 </script>
 
