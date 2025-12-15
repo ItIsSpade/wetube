@@ -1036,9 +1036,12 @@
     }
 
     function formatSeconds(seconds) {
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = seconds % 60;
+        const num = parseInt(seconds, 10);
+        if (isNaN(num)) return "";
+        
+        const h = Math.floor(num / 3600);
+        const m = Math.floor((num % 3600) / 60);
+        const s = num % 60;
         const mStr = h > 0 ? m.toString().padStart(2, '0') : m.toString();
         const sStr = s.toString().padStart(2, '0');
         return h > 0 ? `${h}:${mStr}:${sStr}` : `${mStr}:${sStr}`;
@@ -1484,36 +1487,38 @@
             }).join("");
         }
     
-        function displayVideos() {
-            const grid = document.getElementById("videoGrid");
-            grid.innerHTML = videos.map(v => {
-                const views = formatViewCount(v.viewCount);
-                const dur = formatSeconds(v.lengthSeconds);
-                const date = v.publishedText || formatTimestamp(v.published);
-                const title = v.title.replace(/"/g, "&quot;");
-                let rawThumb = v.videoThumbnails ? v.videoThumbnails[0].url : "";
-                // Use resolveThumbnail to ensure absolute URL
-                const thumb = resolveThumbnail(rawThumb);
-                
-                return `
-                    <div class="video-card" onclick="openVideo('${v.videoId}')">
-                        <div class="video-thumbnail">
-                            <img src="${thumb}" alt="${title}" onerror="getFallbackImage(this, '${v.videoId}')">
-                            <div class="play-overlay">▶</div>
-                            ${dur ? `<div class="video-duration">⏱ ${dur}</div>` : ""}
-                        </div>
-                        <div class="video-info">
-                            <h3 class="video-title">${title}</h3>
-                            <p class="video-channel">${v.author}</p>
-                            <div class="video-meta">
-                                <span>👁 ${views} views</span>
-                                <span>${date}</span>
+            function displayVideos() {
+                const grid = document.getElementById("videoGrid");
+                grid.innerHTML = videos.map(v => {
+                    const views = formatViewCount(v.viewCount);
+                    const dur = formatSeconds(v.lengthSeconds);
+                    const date = v.publishedText || formatTimestamp(v.published);
+                    const title = v.title.replace(/"/g, "&quot;");
+                    
+                    // Handle both API structure (videoThumbnails) and manual structure (thumbnail)
+                    let rawThumb = (v.videoThumbnails && v.videoThumbnails.length > 0) ? v.videoThumbnails[0].url : (v.thumbnail || "");
+                    
+                    // Use resolveThumbnail to ensure absolute URL
+                    const thumb = resolveThumbnail(rawThumb);
+                    
+                    return `
+                        <div class="video-card" onclick="openVideo('${v.videoId}')">
+                            <div class="video-thumbnail">
+                                <img src="${thumb}" alt="${title}" onerror="getFallbackImage(this, '${v.videoId}')">
+                                <div class="play-overlay">▶</div>
+                                ${dur ? `<div class="video-duration">⏱ ${dur}</div>` : ""}
                             </div>
-                        </div>
-                    </div>`;
-            }).join("");
-        }
-    function openVideo(id) {
+                            <div class="video-info">
+                                <h3 class="video-title">${title}</h3>
+                                <p class="video-channel">${v.author}</p>
+                                <div class="video-meta">
+                                    <span>👁 ${views} views</span>
+                                    <span>${date}</span>
+                                </div>
+                            </div>
+                        </div>`;
+                }).join("");
+            }    function openVideo(id) {
         trackEvent('/api/track/videoClick');
         const modal = document.getElementById("videoModal");
         const iframe = document.getElementById("videoIframe");
@@ -1698,7 +1703,8 @@
                                 author: currentChannelName,
                                 authorId: currentChannelId,
                                 viewCount: item.viewCount,
-                                published: item.published
+                                published: item.published,
+                                lengthSeconds: item.lengthSeconds
                             }));
                         }
                     } catch (e) { /* ignore */ }
@@ -1745,7 +1751,8 @@
                         author: it.author || currentChannelName,
                         authorId: it.authorId || currentChannelId,
                         viewCount: it.viewCount,
-                        published: it.published
+                        published: it.published,
+                        lengthSeconds: it.lengthSeconds
                     });
                     if (collected.length >= TARGET_PER_PAGE) break;
                 }
@@ -1754,6 +1761,8 @@
                 fetchPage++;
                 backendPagesTried++;
             }
+
+            if (page === 1) trackEvent('/api/track/search');
 
             // If nothing collected on first page, show message
             if (collected.length === 0 && page === 1) {
@@ -1834,7 +1843,8 @@
                                 author: channelName,
                                 authorId: channelId,
                                 viewCount: item.viewCount,
-                                published: item.published
+                                published: item.published,
+                                lengthSeconds: item.lengthSeconds
                             }));
                         }
                     } catch (e) { /* ignore */ }
@@ -1900,13 +1910,16 @@
                         author: it.author || channelName,
                         authorId: it.authorId || channelId,
                         viewCount: it.viewCount,
-                        published: it.published
+                        published: it.published,
+                        lengthSeconds: it.lengthSeconds
                     });
                     if (collected.length >= TARGET_PER_PAGE) break;
                 }
                 fetchPage++;
                 backendPagesTried++;
             }
+
+            if (page === 1) trackEvent('/api/track/search');
 
             if (collected.length === 0 && page === 1) {
                 grid.innerHTML = "<p>No videos found for this channel via search.</p>";
