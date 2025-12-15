@@ -746,6 +746,9 @@
                 <div class="logo-icon">▶</div>
                 <h1 class="logo-text">WeTube</h1>
             </div>
+            <div id="liveUserIndicator" class="channel-btn" style="margin-left: 10px; padding: 0.5rem 1rem; cursor: default; background: rgba(0,255,0,0.1); border-color: rgba(0,255,0,0.3); display: flex; align-items: center; gap: 5px;">
+                <span style="font-size: 0.8rem;">🟢</span> <span id="liveUserCount" style="font-weight: bold;">Loading...</span>
+            </div>
             <button id="darkModeToggle" class="channel-btn" style="margin-right:8px;" onclick="toggleDarkMode()">🌙</button>
             <a href="https://github.com/ItIsSpade/wetube"
                target="_blank"
@@ -859,6 +862,27 @@
             console.error('Tracking error:', e);
         }
     }
+
+    // --- LIVE USER TRACKING ---
+    async function updateLiveUserCount() {
+        try {
+            const response = await fetch(`${TRACKING_API_BASE}/api/activeUsers?t=${Date.now()}`);
+            if (response.ok) {
+                const data = await response.json();
+                const el = document.getElementById('liveUserCount');
+                if (el) {
+                     el.textContent = `${data.activeUsers} Online`;
+                }
+            }
+        } catch (e) {
+            // silent fail
+        }
+    }
+
+    // Poll every 5 seconds to keep UI fresh
+    setInterval(updateLiveUserCount, 5000);
+    // Initial call
+    updateLiveUserCount();
 
     // Track Focused Time
     let accumulatedTime = 0;
