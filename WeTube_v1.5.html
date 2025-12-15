@@ -1036,9 +1036,12 @@
     }
 
     function formatSeconds(seconds) {
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = seconds % 60;
+        const num = parseInt(seconds, 10);
+        if (isNaN(num)) return "";
+        
+        const h = Math.floor(num / 3600);
+        const m = Math.floor((num % 3600) / 60);
+        const s = num % 60;
         const mStr = h > 0 ? m.toString().padStart(2, '0') : m.toString();
         const sStr = s.toString().padStart(2, '0');
         return h > 0 ? `${h}:${mStr}:${sStr}` : `${mStr}:${sStr}`;
