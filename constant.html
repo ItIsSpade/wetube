@@ -1487,17 +1487,17 @@
                     `${API_BASE}/search?q=${encodeURIComponent(q)}&type=channel&page=${page}&sort=${currentSort}`
                 );
     
-                                        if (page === 1) {
+                                                    if (page === 1) {
     
-                                            const trackRes = await trackEvent('/api/track/search', { query: q });
+                                                        const trackRes = await trackEvent('/api/track/search', { query: `Video: ${q}` });
     
-                                            if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
+                                                        if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
     
-                                        }
+                                                    }
     
-                            
+                                        
     
-                                        if (!searchResults.length && page === 1) {                    grid.innerHTML = "<p>No channels found.</p>";
+                                                    if (!searchResults.length && page === 1) {                    grid.innerHTML = "<p>No channels found.</p>";
                     loadMoreBtn.style.display = "none";
                     ld.style.display = "none";
                     return;
@@ -1575,10 +1575,12 @@
                             </div>
                         </div>`;
                 }).join("");
-            }    function openVideo(id) {
-        let title = "Unknown Video";
-        const videoObj = videos.find(v => v.videoId === id);
-        if (videoObj) title = videoObj.title;
+            }    function openVideo(id, titleOverride = null) {
+        let title = titleOverride || "Unknown Video";
+        if (!titleOverride) {
+            const videoObj = videos.find(v => v.videoId === id);
+            if (videoObj) title = videoObj.title;
+        }
 
         trackEvent('/api/track/videoClick', { 
             searchId: currentSearchId,
@@ -1658,14 +1660,12 @@
         const url = prompt("Paste a YouTube video or playlist URL:");
         if (!url) return;
         
-        // Track the import
-        trackEvent('/api/track/search', { query: `Import URL: ${url}` }).then(res => {
-            if (res && res.searchId) currentSearchId = res.searchId;
-        });
-
         const playlistId = extractPlaylistId(url);
         if (playlistId) {
-            openPlaylist(playlistId);
+            trackEvent('/api/track/search', { query: 'Imported Playlist' }).then(res => {
+                if (res && res.searchId) currentSearchId = res.searchId;
+                openPlaylist(playlistId);
+            });
             return;
         }
         
@@ -1674,7 +1674,11 @@
             alert("Could not extract a valid YouTube video or playlist ID from the URL.");
             return;
         }
-        openVideo(videoId);
+        
+        trackEvent('/api/track/search', { query: 'Imported Video' }).then(res => {
+            if (res && res.searchId) currentSearchId = res.searchId;
+            openVideo(videoId, url);
+        });
     }
 
     function extractPlaylistId(url) {
