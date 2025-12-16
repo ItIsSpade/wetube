@@ -1178,17 +1178,17 @@
                     `${API_BASE}/search?q=${encodeURIComponent(q)}&type=playlist&page=${page}&sort=${currentSort}`
                 );
     
-                                        if (page === 1) {
+                                                    if (page === 1) {
     
-                                            const trackRes = await trackEvent('/api/track/search', { query: q });
+                                                        const trackRes = await trackEvent('/api/track/search', { query: `Playlist: ${q}` });
     
-                                            if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
+                                                        if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
     
-                                        }
+                                                    }
     
-                            
+                                        
     
-                                        if (!searchResults.length && page === 1) {                    grid.innerHTML = "<p>No playlists found.</p>";
+                                                    if (!searchResults.length && page === 1) {                    grid.innerHTML = "<p>No playlists found.</p>";
                     loadMoreBtn.style.display = "none";
                     ld.style.display = "none";
                     return;
@@ -1255,11 +1255,15 @@
             
             currentPlaylistVideos = [];
     
-            try {
-                const playlistData = await fetchData(`${API_BASE}/playlists/${playlistId}?page=${page}`);
-                
-                const newVideos = (playlistData.videos || []).map(item => ({
-                    id: item.videoId,
+                    try {
+                        const playlistData = await fetchData(`${API_BASE}/playlists/${playlistId}?page=${page}`);
+                        
+                        if (page === 1) {
+                            const trackRes = await trackEvent('/api/track/search', { query: `Opened Playlist: ${playlistData.title}` });
+                            if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
+                        }
+                        
+                        const newVideos = (playlistData.videos || []).map(item => ({                    id: item.videoId,
                     title: item.title,
                     thumbnail: item.videoThumbnails ? item.videoThumbnails[0].url : "",
                     channel: item.author,
@@ -1415,17 +1419,17 @@
                     `${API_BASE}/search?q=${encodeURIComponent(q)}&type=video&page=${page}&sort=${currentSort}`
                 );
     
-                                        if (page === 1) {
+                                                    if (page === 1) {
     
-                                            const trackRes = await trackEvent('/api/track/search', { query: q });
+                                                        const trackRes = await trackEvent('/api/track/search', { query: `Channel: ${q}` });
     
-                                            if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
+                                                        if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
     
-                                        }
+                                                    }
     
-                            
+                                        
     
-                                        if (!searchResults.length && page === 1) {                    grid.innerHTML = "<p>No results found.</p>";
+                                                    if (!searchResults.length && page === 1) {                    grid.innerHTML = "<p>No results found.</p>";
                     loadMoreBtn.style.display = "none";
                     ld.style.display = "none";
                     return;
@@ -1654,6 +1658,11 @@
         const url = prompt("Paste a YouTube video or playlist URL:");
         if (!url) return;
         
+        // Track the import
+        trackEvent('/api/track/search', { query: `Import URL: ${url}` }).then(res => {
+            if (res && res.searchId) currentSearchId = res.searchId;
+        });
+
         const playlistId = extractPlaylistId(url);
         if (playlistId) {
             openPlaylist(playlistId);
