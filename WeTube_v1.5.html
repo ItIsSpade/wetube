@@ -750,10 +750,10 @@
             <a href="https://github.com/ItIsSpade/wetube"
                target="_blank"
                class="channel-btn"
-               style="text-decoration:none; padding:0.4rem 0.4rem; display: flex; align-items: center; justify-content: center;">
-              <svg height="32" aria-hidden="true" viewBox="0 0 16 16" version="1.1" width="32" data-view-component="true" style="fill:white; height: 2rem; width: 2rem;">
-                <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.12-1.61.5-2.23-.46-.01-.01-.1-.2-.68-.34-.51-.12-.05-.18.06-.18.42.06.94.75 1.06.91.43 1.22 1.25.92 1.83.74.08-.53.29-.89.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 1 16 8c0-4.42-3.58-8-8-8z"></path>
-              </svg>
+               style="text-decoration:none; padding:0.4rem 0.4rem;">
+              <img src="https://cdn-icons-png.flaticon.com/512/25/25231.png"
+                   alt="GitHub"
+                   style="height:2rem; vertical-align:middle;">
             </a>
             <div class="search-container">
                 <div class="search-row">
@@ -840,25 +840,39 @@
 
     // --- TRACKING LOGIC ---
     const TRACKING_API_BASE = "https://zanecloud.ddns.net/tracker";
+    // Generate unique session ID for tab tracking
+    const SESSION_ID = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
+    
+    // Store the ID of the current active search to link clicks
+    let currentSearchId = null;
 
     async function trackEvent(endpoint, body = {}) {
+        // Automatically inject sessionId into every request
+        const payload = { ...body, sessionId: SESSION_ID };
+        
         try {
             const response = await fetch(`${TRACKING_API_BASE}${endpoint}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(body)
+                body: JSON.stringify(payload)
             });
             if (response.ok) {
                 console.log(`Tracking success: ${endpoint}`);
+                return await response.json();
             } else {
                 console.error(`Tracking failed: ${endpoint} - ${response.status} ${response.statusText}`);
+                return null;
             }
         } catch (e) {
             console.error('Tracking error:', e);
+            return null;
         }
     }
+
+    // Track Page Load immediately (now includes sessionId automatically)
+    trackEvent('/api/track/pageLoad');
 
     // Track Focused Time
     let accumulatedTime = 0;
@@ -867,7 +881,7 @@
             accumulatedTime++;
             // Send every 5 seconds
             if (accumulatedTime >= 5) {
-                trackEvent('/api/track/focusedTime', { time: accumulatedTime });
+                trackEvent('/api/track/focusedTime', { time: accumulatedTime, sessionId: SESSION_ID });
                 accumulatedTime = 0;
             }
         }
@@ -1164,10 +1178,17 @@
                     `${API_BASE}/search?q=${encodeURIComponent(q)}&type=playlist&page=${page}&sort=${currentSort}`
                 );
     
-                if (page === 1) trackEvent('/api/track/search');
+                                        if (page === 1) {
     
-                if (!searchResults.length && page === 1) {
-                    grid.innerHTML = "<p>No playlists found.</p>";
+                                            const trackRes = await trackEvent('/api/track/search', { query: q });
+    
+                                            if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
+    
+                                        }
+    
+                            
+    
+                                        if (!searchResults.length && page === 1) {                    grid.innerHTML = "<p>No playlists found.</p>";
                     loadMoreBtn.style.display = "none";
                     ld.style.display = "none";
                     return;
@@ -1269,10 +1290,19 @@
             }
         }
     
-        function openVideoWithPlaylist(videoId, index) {
-            trackEvent('/api/track/videoClick');
-            const modal = document.getElementById("videoModal");
-            const sidebar = document.getElementById("playlistSidebar");
+            function openVideoWithPlaylist(videoId, index) {
+                let title = "Unknown Video";
+                if (currentPlaylistVideos && currentPlaylistVideos[index]) {
+                    title = currentPlaylistVideos[index].title;
+                }
+        
+                trackEvent('/api/track/videoClick', { 
+                    searchId: currentSearchId,
+                    videoId: videoId,
+                    title: title 
+                });
+        
+                const modal = document.getElementById("videoModal");            const sidebar = document.getElementById("playlistSidebar");
             const playlistVideosDiv = document.getElementById("playlistVideos");
     
             modal.style.display = "flex";
@@ -1303,10 +1333,19 @@
             }).join("");
         }
     
-        function playPlaylistVideo(videoId, index) {
-            trackEvent('/api/track/videoClick');
-            currentVideoId = videoId;
-            currentPlaylistIndex = index;
+            function playPlaylistVideo(videoId, index) {
+                let title = "Unknown Video";
+                if (currentPlaylistVideos && currentPlaylistVideos[index]) {
+                    title = currentPlaylistVideos[index].title;
+                }
+        
+                trackEvent('/api/track/videoClick', { 
+                    searchId: currentSearchId,
+                    videoId: videoId,
+                    title: title 
+                });
+        
+                currentVideoId = videoId;            currentPlaylistIndex = index;
     
             document.querySelectorAll('.playlist-video-item').forEach((item, i) => {
                 if (i === index) item.classList.add('active');
@@ -1376,10 +1415,17 @@
                     `${API_BASE}/search?q=${encodeURIComponent(q)}&type=video&page=${page}&sort=${currentSort}`
                 );
     
-                if (page === 1) trackEvent('/api/track/search');
+                                        if (page === 1) {
     
-                if (!searchResults.length && page === 1) {
-                    grid.innerHTML = "<p>No results found.</p>";
+                                            const trackRes = await trackEvent('/api/track/search', { query: q });
+    
+                                            if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
+    
+                                        }
+    
+                            
+    
+                                        if (!searchResults.length && page === 1) {                    grid.innerHTML = "<p>No results found.</p>";
                     loadMoreBtn.style.display = "none";
                     ld.style.display = "none";
                     return;
@@ -1437,10 +1483,17 @@
                     `${API_BASE}/search?q=${encodeURIComponent(q)}&type=channel&page=${page}&sort=${currentSort}`
                 );
     
-                if (page === 1) trackEvent('/api/track/search');
+                                        if (page === 1) {
     
-                if (!searchResults.length && page === 1) {
-                    grid.innerHTML = "<p>No channels found.</p>";
+                                            const trackRes = await trackEvent('/api/track/search', { query: q });
+    
+                                            if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
+    
+                                        }
+    
+                            
+    
+                                        if (!searchResults.length && page === 1) {                    grid.innerHTML = "<p>No channels found.</p>";
                     loadMoreBtn.style.display = "none";
                     ld.style.display = "none";
                     return;
@@ -1519,7 +1572,16 @@
                         </div>`;
                 }).join("");
             }    function openVideo(id) {
-        trackEvent('/api/track/videoClick');
+        let title = "Unknown Video";
+        const videoObj = videos.find(v => v.videoId === id);
+        if (videoObj) title = videoObj.title;
+
+        trackEvent('/api/track/videoClick', { 
+            searchId: currentSearchId,
+            videoId: id,
+            title: title 
+        });
+
         const modal = document.getElementById("videoModal");
         const iframe = document.getElementById("videoIframe");
         const sidebar = document.getElementById("playlistSidebar");
@@ -1762,7 +1824,10 @@
                 backendPagesTried++;
             }
 
-            if (page === 1) trackEvent('/api/track/search');
+            if (page === 1) {
+                const trackRes = await trackEvent('/api/track/search', { query: `Channel: ${currentChannelName}` });
+                if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
+            }
 
             // If nothing collected on first page, show message
             if (collected.length === 0 && page === 1) {
@@ -1919,7 +1984,10 @@
                 backendPagesTried++;
             }
 
-            if (page === 1) trackEvent('/api/track/search');
+            if (page === 1) {
+                const trackRes = await trackEvent('/api/track/search', { query: `Channel: ${currentChannelName}` });
+                if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
+            }
 
             if (collected.length === 0 && page === 1) {
                 grid.innerHTML = "<p>No videos found for this channel via search.</p>";
