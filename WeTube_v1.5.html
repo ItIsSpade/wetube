@@ -1,0 +1,2100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>WeTube - Search & Watch</title>
+    <meta name="description" content="Search and watch YouTube videos with WeTube - A clean, modern YouTube interface powered by Invidious"/>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --navy: #1e3a8a;
+            --sky-blue: #0ea5e9;
+            --light-sky: #7dd3fc;
+            --navy-dark: #1e40af;
+            --bg-light: #f8fafc;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+            --shadow: 0 10px 30px -10px rgba(30, 58, 138, 0.3);
+            --shadow-card: 0 4px 20px -4px rgba(30, 58, 138, 0.15);
+            --shadow-hover: 0 8px 30px -8px rgba(14, 165, 233, 0.4);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        body.dark-mode {
+            background: #181e2a;
+            color: #e5e7eb;
+        }
+        body.dark-mode .header {
+            background: linear-gradient(135deg, #0a1836, #2563eb);
+            box-shadow: var(--shadow);
+        }
+        body.dark-mode .logo-text { color: #fff; }
+        body.dark-mode .video-card,
+        body.dark-mode .playlist-card {
+            background: #232b3b;
+            color: #e5e7eb;
+            box-shadow: var(--shadow-card);
+        }
+        body.dark-mode .video-card:hover,
+        body.dark-mode .playlist-card:hover {
+            box-shadow: var(--shadow-hover);
+        }
+        body.dark-mode .video-title,
+        body.dark-mode .playlist-title { color: #e5e7eb; }
+        body.dark-mode .video-card:hover .video-title,
+        body.dark-mode .playlist-card:hover .playlist-title { color: #60a5fa; }
+        body.dark-mode .video-channel,
+        body.dark-mode .playlist-meta,
+        body.dark-mode .video-meta { color: #a5b4fc; }
+        body.dark-mode .modal-content { background: #232b3b; color: #e5e7eb; }
+        body.dark-mode .close-btn:hover { background: #1e293b; }
+        body.dark-mode .search-input,
+        body.dark-mode .search-dropdown {
+            background: #232b3b;
+            color: #e5e7eb;
+            border: 1px solid #334155;
+        }
+        body.dark-mode .search-input:focus,
+        body.dark-mode .search-dropdown:focus {
+            border: 1.5px solid #60a5fa;
+        }
+        body.dark-mode .channel-btn {
+            background: rgba(30, 58, 138, 0.2);
+            border: 2px solid #334155;
+            color: #e5e7eb;
+        }
+        body.dark-mode .channel-btn:hover {
+            background: rgba(30, 58, 138, 0.3);
+            border-color: #60a5fa;
+        }
+        body.dark-mode .search-btn {
+            background: #2563eb;
+            color: #fff;
+        }
+        body.dark-mode .search-btn:hover {
+            background: #60a5fa;
+        }
+        body.dark-mode .loading-spinner {
+            border: 3px solid #60a5fa;
+            border-top: 3px solid transparent;
+        }
+        body.dark-mode .playlist-sidebar {
+            background: #1e293b !important;
+        }
+        body.dark-mode .playlist-sidebar.loading {
+            background: #1e293b !important;
+        }
+        body.dark-mode #playlistLoadingSpinner p {
+            color: #a5b4fc;
+        }
+        body.dark-mode .playlist-video-item {
+            background: #232b3b;
+            border-color: #334155;
+        }
+        body.dark-mode .playlist-video-item:hover {
+            background: #2d3748;
+        }
+        body.dark-mode .playlist-video-item.active {
+            background: #1e40af;
+        }
+        body.dark-mode #shufflePlaylistBtn {
+            background: #2563eb;
+            color: #fff;
+        }
+        body.dark-mode #shufflePlaylistBtn:hover {
+            background: #60a5fa;
+        }
+        body.dark-mode #autoplayToggleBtn {
+            background: #334155;
+            color: #e5e7eb;
+        }
+        body.dark-mode #autoplayToggleBtn.active {
+            background: #2563eb;
+        }
+        #autoplayToggleBtn.active {
+            background: var(--sky-blue);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--navy), var(--sky-blue));
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2rem;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+        }
+
+        .logo-text {
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+        }
+
+        .search-container {
+            flex: 1;
+            max-width: 600px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .search-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 0.75rem 3rem 0.75rem 1rem;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: var(--shadow-card);
+            outline: none;
+        }
+
+        .search-input:focus {
+            box-shadow: var(--shadow-hover);
+        }
+
+        .search-btn {
+            position: absolute;
+            right: 4px;
+            top: 4px;
+            width: 40px;
+            height: 40px;
+            background: var(--sky-blue);
+            border: none;
+            border-radius: 8px;
+            color: var(--navy-dark);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .search-btn:hover {
+            background: var(--light-sky);
+        }
+
+        .channel-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .channel-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem 0;
+        }
+
+        .loading-spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--sky-blue);
+            border-top: 3px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .welcome-screen {
+            text-align: center;
+            padding: 6rem 0;
+        }
+
+        .welcome-icon {
+            width: 96px;
+            height: 96px;
+            background: linear-gradient(135deg, var(--navy), var(--sky-blue));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            color: white;
+            font-size: 3rem;
+        }
+
+        .welcome-title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .welcome-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .video-card, .playlist-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow-card);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .video-card:hover, .playlist-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .video-thumbnail, .playlist-thumbnail {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            overflow: hidden;
+        }
+
+        .video-thumbnail img, .playlist-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .video-card:hover .video-thumbnail img,
+        .playlist-card:hover .playlist-thumbnail img {
+            transform: scale(1.05);
+        }
+
+        .play-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            color: white;
+            font-size: 3rem;
+        }
+
+        .video-card:hover .play-overlay,
+        .playlist-card:hover .play-overlay {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .playlist-count {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .video-duration {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .video-info, .playlist-info {
+            padding: 1rem;
+        }
+
+        .video-title, .playlist-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            transition: color 0.3s ease;
+        }
+
+        .video-card:hover .video-title,
+        .playlist-card:hover .playlist-title {
+            color: var(--navy);
+        }
+
+        .video-channel, .playlist-meta {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .video-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 1rem;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 1040px; /* scaled up a bit more */
+            max-width: 96vw;
+            max-height: 85vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 0.75rem;
+            gap: 0.5rem;
+            position: relative;
+            padding-right: 56px; /* reserve space for absolute X */
+        }
+
+        .modal .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.05rem; /* smaller */
+            cursor: pointer;
+            padding: 0.35rem 0.5rem;
+            border-radius: 6px;
+            transition: background 0.2s ease;
+            color: #9ca3af;
+        }
+
+        .modal .close-btn:hover {
+            background: rgba(0,0,0,0.04);
+        }
+
+        .modal-actions {
+            margin-left: auto; /* push actions to the right */
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: transparent;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            color: #6b7280;
+            padding: 6px;
+            border-radius: 6px;
+        }
+
+        .modal-close:hover { background: rgba(0,0,0,0.04); }
+
+        .video-player-container {
+            padding: 0.75rem 1rem 1rem; /* restored original padding so it looks 'in' the popup */
+            display: flex;
+            gap: 1rem;
+            justify-content: center; /* keep player centered inside modal */
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .video-player {
+            position: relative;
+            width: 100%;
+            max-width: 1000px; /* allow the player to grow larger */
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            margin: 0 auto;
+        }
+
+        .video-iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 8px;
+            background: #000;
+        }
+
+        .playlist-sidebar {
+            width: 300px;
+            max-height: 500px;
+            overflow-y: auto;
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 1rem;
+            position: relative;
+        }
+        .playlist-sidebar.loading {
+            pointer-events: none;
+            user-select: none;
+        }
+        .playlist-sidebar.loading * {
+            pointer-events: none;
+        }
+        .playlist-sidebar.loading #playlistLoadingSpinner {
+            display: flex !important;
+        }
+        .playlist-sidebar.loading #playlistVideos {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .playlist-video-item {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border: 1px solid #e2e8f0;
+        }
+
+        .playlist-video-item:hover {
+            background: #e2e8f0;
+        }
+
+        .playlist-video-item.active {
+            background: #dbeafe;
+            border-color: #3b82f6;
+        }
+
+        .playlist-video-thumb {
+            width: 80px;
+            height: 45px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .playlist-video-info {
+            flex: 1;
+            font-size: 0.85rem;
+        }
+
+        .playlist-video-title {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .playlist-video-channel {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .search-dropdown {
+            height: 40px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            padding: 0 8px;
+            font-size: 1rem;
+            background: #fff;
+            color: var(--text-dark);
+            min-width: 150px;
+            transition: border 0.2s;
+        }
+
+        .search-dropdown:focus {
+            border: 1.5px solid var(--sky-blue);
+            outline: none;
+        }
+
+        @media (max-width: 768px) {
+            .header-content { flex-direction: column; gap: 1rem; }
+            .search-row { flex-direction: column; gap: 0.5rem; }
+            .search-container { max-width: 100%; }
+            .video-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 1rem;
+            }
+            .video-iframe { height: 250px; }
+            .logo-text { font-size: 1.5rem; }
+            .modal-content {
+                width: 100%;
+            }
+            .video-player-container {
+                flex-direction: column;
+            }
+            .playlist-sidebar {
+                width: 100%;
+                max-height: 300px;
+            }
+        }
+        #darkModeToggle { font-size: 1.5rem; }
+
+        /* Update Popup Styles */
+        .update-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .update-modal-content {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 20px;
+            max-width: 820px; /* slightly bigger popup */
+            width: 80%;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            transform: translateY(0);
+            animation: slideUp 0.3s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .update-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+            animation: bounce 1s infinite;
+        }
+
+        .update-title {
+            font-size: 1.8rem;
+            color: var(--navy);
+            margin-bottom: 1rem;
+            font-weight: 800;
+        }
+
+        .update-text {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .update-btn {
+            background: linear-gradient(135deg, var(--navy), var(--sky-blue));
+            color: white;
+            border: none;
+            padding: 0.9rem 1.6rem; /* bigger */
+            border-radius: 14px;
+            font-size: 1.15rem; /* larger */
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            box-shadow: 0 8px 24px rgba(14, 165, 233, 0.28);
+        }
+
+        .update-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(14, 165, 233, 0.45);
+        }
+        
+        body.dark-mode .update-modal-content {
+            background: #1e293b;
+            color: #e5e7eb;
+        }
+        body.dark-mode .update-title {
+            color: #60a5fa;
+        }
+        body.dark-mode .update-text {
+            color: #94a3b8;
+        }
+
+        /* New styles for update popup actions and close button */
+        .update-actions {
+            display: flex;
+            justify-content: center; /* center the button */
+            gap: 0.5rem;
+            margin-top: 1.25rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .update-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: transparent;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            color: #6b7280;
+            padding: 6px;
+            border-radius: 6px;
+        }
+
+        .update-close:hover {
+            background: rgba(0,0,0,0.04);
+        }
+
+        body.dark-mode .update-close {
+            color: #cbd5e1;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    </style>
+</head>
+<body class="dark-mode">
+    <div id="updatePopup" class="update-modal" style="display: none;">
+        <div class="update-modal-content">
+            <div class="update-icon">🚀</div>
+            <h2 class="update-title">Welcome to WeTube v1.5!</h2>
+            <p class="update-text">
+                The silly Youtube API that was limiting how many people could use it before, has just been replaced! This means you can now share this with other people who need it, and it will still work just fine for you! If anything has stopped working because of this MAJOR change, please let Zane know and he'll try to fix it :) Happy watching!
+            </p>
+            <div class="update-actions">
+                <button class="update-btn" onclick="closeUpdatePopup()">Let's Go!</button>
+            </div>
+        </div>
+    </div>
+
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section" onclick="window.location.reload()">
+                <div class="logo-icon">▶</div>
+                <h1 class="logo-text">WeTube</h1>
+            </div>
+            <button id="darkModeToggle" class="channel-btn" style="margin-right:8px;" onclick="toggleDarkMode()">🌙</button>
+            <a href="https://github.com/ItIsSpade/wetube"
+               target="_blank"
+               class="channel-btn"
+               style="text-decoration:none; padding:0.4rem 0.4rem;">
+              <img src="https://cdn-icons-png.flaticon.com/512/25/25231.png"
+                   alt="GitHub"
+                   style="height:2rem; vertical-align:middle;">
+            </a>
+            <div class="search-container">
+                <div class="search-row">
+                    <input
+                        type="text"
+                        class="search-input"
+                        id="searchInput"
+                        placeholder="Search videos, channels, or playlists..."
+                        onkeypress="handleKeyPress(event)"
+                    />
+                    <button class="search-btn" onclick="triggerSearch()">🔍</button>
+                </div>
+                <div class="search-row">
+                    <select id="sortSelect" class="search-dropdown">
+                        <option value="relevance">Sort by: Relevance</option>
+                        <option value="date">Sort by: Upload Date</option>
+                        <option value="views">Sort by: View Count</option>
+                    </select>
+                    <select id="searchTypeSelect" class="search-dropdown">
+                        <option value="video">🔎 Video Search</option>
+                        <option value="channel">👤 Channel Search</option>
+                        <option value="playlist">📋 Playlist Search</option>
+                    </select>
+                </div>
+            </div>
+            <button class="channel-btn" onclick="loadChannelVideos()">📺 Hicksville Videos</button>
+            <button class="channel-btn" onclick="promptAndOpenYoutubeUrl()">➕ Open YouTube URL</button>
+        </div>
+    </header>
+
+    <div id="videoModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-actions">
+                    <button class="close-btn" onclick="openVideoInNewTab()" title="Open in new tab">💭 New Tab</button>
+                    <button class="close-btn" id="copyUrlBtn" onclick="copyVideoUrl()" title="Copy video URL">🔗 Copy URL</button>
+                </div>
+                <button class="modal-close" onclick="closeVideo()" title="Close video">✕</button>
+            </div>
+            <div class="video-player-container">
+                <div class="video-player">
+                    <iframe id="videoIframe" class="video-iframe" allowfullscreen></iframe>
+                </div>
+                <div id="playlistSidebar" class="playlist-sidebar" style="display:none;">
+                    <div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1rem;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <h3 style="margin:0;font-size:1.1rem;">Playlist Videos</h3>
+                            <button id="shufflePlaylistBtn" onclick="shufflePlaylist()" style="padding:0.5rem 1rem;border-radius:6px;background:var(--sky-blue);color:white;border:none;cursor:pointer;font-size:0.9rem;transition:background 0.3s;" onmouseover="this.style.background='var(--light-sky)'" onmouseout="this.style.background='var(--sky-blue)'">🔀 Shuffle</button>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:0.5rem;">
+                            <button id="autoplayToggleBtn" onclick="toggleAutoplay()" style="padding:0.5rem 1rem;border-radius:6px;background:var(--text-muted);color:white;border:none;cursor:pointer;font-size:0.9rem;transition:background 0.3s;flex:1;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">▶️ Autoplay: OFF</button>
+                        </div>
+                    </div>
+                    <div id="playlistLoadingSpinner" style="display:none;text-align:center;padding:2rem;flex-direction:column;align-items:center;justify-content:center;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;">
+                        <div class="loading-spinner" style="margin:0 auto 1rem;"></div>
+                        <p style="color:var(--text-muted);font-size:0.9rem;margin:0;">Loading playlist videos...</p>
+                        <p id="playlistLoadingCount" style="color:var(--text-muted);font-size:0.8rem;margin-top:0.5rem;margin-bottom:0;"></p>
+                    </div>
+                    <div id="playlistVideos"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="main-content">
+        <div id="loadingDiv" class="loading" style="display: none;">
+            <div class="loading-spinner"></div>
+            <p>Searching...</p>
+        </div>
+        <div id="welcomeScreen" class="welcome-screen">
+            <div class="welcome-icon">🔍</div>
+            <h2 class="welcome-title">Welcome to WeTube</h2>
+            <p class="welcome-subtitle">Search for videos, playlists, or channels to get started</p>
+        </div>
+        <div id="videoGrid" class="video-grid"></div>
+        <div style="text-align:center;margin-top:2rem;">
+            <button id="loadMoreBtn" style="display:none;padding:0.75rem 2rem;font-size:1.1rem;border-radius:12px;background:var(--sky-blue);color:white;border:none;cursor:pointer;transition:background 0.3s;" onclick="loadMoreVideos()">⬇️ Load More</button>
+        </div>
+    </main>
+
+    <script>
+    const API_BASE = "https://zanecloud.ddns.net/api/v1";
+    const HICKSVILLE_HANDLE = "@hicksvillevideoproductions1304";
+
+    // --- TRACKING LOGIC ---
+    const TRACKING_API_BASE = "https://zanecloud.ddns.net/tracker";
+    // Generate unique session ID for tab tracking
+    const SESSION_ID = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
+    
+    // Store the ID of the current active search to link clicks
+    let currentSearchId = null;
+
+    async function trackEvent(endpoint, body = {}) {
+        // Automatically inject sessionId into every request
+        const payload = { ...body, sessionId: SESSION_ID };
+        
+        try {
+            const response = await fetch(`${TRACKING_API_BASE}${endpoint}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+            if (response.ok) {
+                console.log(`Tracking success: ${endpoint}`);
+                return await response.json();
+            } else {
+                console.error(`Tracking failed: ${endpoint} - ${response.status} ${response.statusText}`);
+                return null;
+            }
+        } catch (e) {
+            console.error('Tracking error:', e);
+            return null;
+        }
+    }
+
+    // Track Page Load immediately (now includes sessionId automatically)
+    trackEvent('/api/track/pageLoad');
+
+    // Track Focused Time
+    let accumulatedTime = 0;
+    setInterval(() => {
+        if (document.hasFocus()) {
+            accumulatedTime++;
+            // Send every 5 seconds
+            if (accumulatedTime >= 5) {
+                trackEvent('/api/track/focusedTime', { time: accumulatedTime, sessionId: SESSION_ID });
+                accumulatedTime = 0;
+            }
+        }
+    }, 1000);
+
+    let videos = [];
+    let playlists = [];
+    let currentPlaylistId = null;
+    let currentPlaylistVideos = [];
+    let currentPlaylistIndex = 0;
+    let playlistAutoplayEnabled = false;
+    let youtubePlayer = null;
+    let youtubePlayerReady = false;
+
+    // Globals for Channel Pagination
+    let currentChannelName = "";
+    let currentChannelId = "";
+    
+    // Mode tracking
+    let currentMode = ""; // "search", "channel", "search-playlist", "channel-search", "playlist-view"
+    let lastSearchQuery = "";
+    let currentPage = 1;
+
+    const COOLDOWN_MS = 500;
+    let lastRequestTime = 0;
+
+    function onYouTubeIframeAPIReady() {
+        youtubePlayerReady = true;
+    }
+
+    function loadAutoplaySetting() {
+        try {
+            const saved = localStorage.getItem('wetube-playlist-autoplay');
+            playlistAutoplayEnabled = saved === 'true';
+            updateAutoplayButton();
+        } catch (e) {
+            playlistAutoplayEnabled = false;
+        }
+    }
+
+    function saveAutoplaySetting() {
+        try {
+            localStorage.setItem('wetube-playlist-autoplay', playlistAutoplayEnabled.toString());
+        } catch (e) {}
+    }
+
+    function updateAutoplayButton() {
+        const btn = document.getElementById("autoplayToggleBtn");
+        if (btn) {
+            if (playlistAutoplayEnabled) {
+                btn.textContent = "▶️ Autoplay: ON";
+                btn.classList.add('active');
+            } else {
+                btn.textContent = "▶️ Autoplay: OFF";
+                btn.classList.remove('active');
+            }
+        }
+    }
+
+    function toggleAutoplay() {
+        playlistAutoplayEnabled = !playlistAutoplayEnabled;
+        saveAutoplaySetting();
+        updateAutoplayButton();
+    }
+
+    function initYouTubePlayer(videoId) {
+        const iframe = document.getElementById("videoIframe");
+        if (!iframe) return;
+
+        iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`;
+
+        if (playlistAutoplayEnabled && window.YT && window.YT.Player) {
+            setTimeout(() => {
+                try {
+                    if (youtubePlayer) {
+                        try { youtubePlayer.destroy(); } catch (e) {}
+                        youtubePlayer = null;
+                    }
+                    youtubePlayer = new YT.Player('videoIframe', {
+                        videoId: videoId,
+                        playerVars: {
+                            autoplay: 1,
+                            rel: 0,
+                            modestbranding: 1,
+                            enablejsapi: 1
+                        },
+                        events: {
+                            'onReady': onPlayerReady,
+                            'onStateChange': onPlayerStateChange
+                        }
+                    });
+                } catch (e) {
+                    console.error('YouTube API error:', e);
+                    youtubePlayer = null;
+                }
+            }, 500);
+        } else {
+            if (youtubePlayer) {
+                try { youtubePlayer.destroy(); } catch (e) {}
+                youtubePlayer = null;
+            }
+        }
+    }
+
+    function onPlayerReady(event) {
+    }
+
+    function onPlayerStateChange(event) {
+        if (event.data === YT.PlayerState.ENDED) {
+            if (playlistAutoplayEnabled && currentPlaylistVideos.length > 0) {
+                playNextVideoInPlaylist();
+            }
+        }
+    }
+
+    function playNextVideoInPlaylist() {
+        if (!currentPlaylistVideos || currentPlaylistVideos.length === 0) return;
+        const currentIndex = currentPlaylistVideos.findIndex(v => v.id === currentVideoId);
+        if (currentIndex < 0) return;
+        const nextIndex = (currentIndex + 1) % currentPlaylistVideos.length;
+        const nextVideo = currentPlaylistVideos[nextIndex];
+        if (nextVideo) {
+            playPlaylistVideo(nextVideo.id, nextIndex);
+        }
+    }
+
+    function canMakeRequest() {
+        const now = Date.now();
+        if (now - lastRequestTime < COOLDOWN_MS) {
+            return false;
+        }
+        return true;
+    }
+
+    async function fetchData(endpoint) {
+        try {
+            const res = await fetch(endpoint);
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status} ${res.statusText}`);
+            }
+            return await res.json();
+        } catch (err) {
+            throw err;
+        }
+    }
+
+    function handleKeyPress(e) {
+        if (e.key === "Enter") triggerSearch();
+    }
+
+    function triggerSearch() {
+        if (currentSearchType === "video") {
+            searchVideos();
+        } else if (currentSearchType === "channel") {
+            searchChannels();
+        } else if (currentSearchType === "playlist") {
+            searchPlaylists();
+        }
+    }
+
+    function formatViewCount(count) {
+        const num = parseInt(count, 10) || 0;
+        if (num >= 1_000_000) return (num / 1_000_000).toFixed(1) + "M";
+        if (num >= 1_000) return (num / 1_000).toFixed(1) + "K";
+        return num.toString();
+    }
+
+    function formatSeconds(seconds) {
+        const num = parseInt(seconds, 10);
+        if (isNaN(num)) return "";
+        
+        const h = Math.floor(num / 3600);
+        const m = Math.floor((num % 3600) / 60);
+        const s = num % 60;
+        const mStr = h > 0 ? m.toString().padStart(2, '0') : m.toString();
+        const sStr = s.toString().padStart(2, '0');
+        return h > 0 ? `${h}:${mStr}:${sStr}` : `${mStr}:${sStr}`;
+    }
+
+    function formatTimestamp(ts) {
+        if (!ts) return "";
+        return new Date(ts * 1000).toLocaleDateString();
+    }
+
+    let currentVideoId = null;
+    let currentSort = "relevance";
+    let currentSearchType = "video";
+    let lastSort = "relevance";
+    let lastSearchType = "video";
+    let channelResults = [];
+
+        // --- THUMBNAIL HELPER ---
+        function resolveThumbnail(url) {
+            if (!url) return "https://via.placeholder.com/320x180?text=No+Thumbnail";
+            if (url.startsWith('//')) return 'https:' + url;
+            if (url.startsWith('/')) return 'https://zanecloud.ddns.net' + url;
+            return url;
+        }
+    
+        function getFallbackImage(img, videoId) {
+            if (videoId) {
+                // Try standard YouTube thumbnail if the proxy/local one fails
+                img.src = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+                img.onerror = function() {
+                    this.src = "https://via.placeholder.com/320x180?text=Error";
+                    this.onerror = null;
+                };
+            } else {
+                img.src = "https://via.placeholder.com/320x180?text=Error";
+                img.onerror = null;
+            }
+        }
+    
+        // --- SORTING LOGIC ---
+        function clientSideSort(array, sortBy) {
+            if (sortBy === 'relevance') return array; 
+            
+            return [...array].sort((a, b) => {
+                if (sortBy === 'date') {
+                    const dateA = a.published || 0;
+                    const dateB = b.published || 0;
+                    return dateB - dateA;
+                } else if (sortBy === 'views') {
+                    const viewsA = a.viewCount || 0;
+                    const viewsB = b.viewCount || 0;
+                    return viewsB - viewsA;
+                }
+                return 0;
+            });
+        }
+    
+        document.getElementById("sortSelect").addEventListener("change", function() {
+            currentSort = this.value;
+            
+            // Handle sorting for active Playlist View (Sidebar)
+            if (currentPlaylistVideos.length > 0 && document.getElementById("videoModal").style.display !== "none") {
+                currentPlaylistVideos = clientSideSort(currentPlaylistVideos, currentSort);
+                renderPlaylistSidebar();
+            } 
+            // Handle sorting for Channel View
+            else if (currentMode === "channel" && videos.length > 0) {
+                videos = clientSideSort(videos, currentSort);
+                displayVideos();
+            } 
+            // Handle Search Modes (refresh search)
+            else if (currentMode === "search" || currentMode === "search-playlist" || currentMode === "channel-search") {
+                if (document.getElementById("searchInput").value.trim()) {
+                    triggerSearch();
+                }
+            }
+        });
+    
+        document.getElementById("searchTypeSelect").addEventListener("change", function() {
+            currentSearchType = this.value;
+            if (document.getElementById("searchInput").value.trim()) {
+                triggerSearch();
+            }
+        });
+    
+        // --- SEARCH FUNCTIONS ---
+    
+        async function searchPlaylists(page = 1) {
+            if (currentSearchType !== "playlist") return;
+            const q = document.getElementById("searchInput").value.trim();
+            if (!q) return;
+    
+            if (currentMode === "search-playlist" && lastSearchQuery === q && page === 1 && currentSort === lastSort && currentSearchType === lastSearchType) {
+                return;
+            }
+    
+            if (!canMakeRequest()) await new Promise(r => setTimeout(r, COOLDOWN_MS));
+            lastRequestTime = Date.now();
+    
+            currentMode = "search-playlist";
+            lastSearchQuery = q;
+            lastSearchType = currentSearchType;
+            lastSort = currentSort;
+            currentPage = page;
+    
+            const ld = document.getElementById("loadingDiv");
+            const ws = document.getElementById("welcomeScreen");
+            const grid = document.getElementById("videoGrid");
+            const loadMoreBtn = document.getElementById("loadMoreBtn");
+    
+            if (page === 1) {
+                ld.style.display = "block";
+                ws.style.display = "none";
+                grid.innerHTML = "";
+                playlists = [];
+            }
+    
+            try {
+                const searchResults = await fetchData(
+                    `${API_BASE}/search?q=${encodeURIComponent(q)}&type=playlist&page=${page}&sort=${currentSort}`
+                );
+    
+                                                    if (page === 1) {
+    
+                                                        const trackRes = await trackEvent('/api/track/search', { query: `Playlist: ${q}` });
+    
+                                                        if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
+    
+                                                    }
+    
+                                        
+    
+                                                    if (!searchResults.length && page === 1) {                    grid.innerHTML = "<p>No playlists found.</p>";
+                    loadMoreBtn.style.display = "none";
+                    ld.style.display = "none";
+                    return;
+                }
+    
+                playlists = playlists.concat(searchResults);
+                
+                displayPlaylists();
+    
+                if (searchResults.length > 0) {
+                    loadMoreBtn.style.display = "inline-block";
+                    loadMoreBtn.disabled = false;
+                } else {
+                    loadMoreBtn.style.display = "none";
+                }
+            } catch (err) {
+                if (page === 1) grid.innerHTML = `<p>Error searching playlists: ${err.message}</p>`;
+                loadMoreBtn.style.display = "none";
+            } finally {
+                ld.style.display = "none";
+            }
+        }
+    
+        function displayPlaylists() {
+            const grid = document.getElementById("videoGrid");
+            grid.innerHTML = playlists.map(p => {
+                const title = p.title.replace(/"/g, "&quot;");
+                let rawThumb = p.playlistThumbnail || (p.videos && p.videos.length > 0 ? p.videos[0].videoThumbnails[0].url : "");
+                const thumb = resolveThumbnail(rawThumb);
+                
+                return `
+                    <div class="playlist-card" onclick="openPlaylist('${p.playlistId}')">
+                        <div class="playlist-thumbnail">
+                            <img src="${thumb}" alt="${title}" onerror="this.src='https://via.placeholder.com/300x200?text=No+Thumbnail'">
+                            <div class="play-overlay"></div>
+                            <div class="playlist-count">Playlist • ${p.videoCount} videos</div>
+                        </div>
+                        <div class="playlist-info">
+                            <h3 class="playlist-title">${title}</h3>
+                            <p class="playlist-meta">${p.author}</p>
+                        </div>
+                    </div>`;
+            }).join("");
+        }
+    
+        async function openPlaylist(playlistId, page = 1) {
+            if (!canMakeRequest()) await new Promise(r => setTimeout(r, COOLDOWN_MS));
+            lastRequestTime = Date.now();
+    
+            currentPlaylistId = playlistId;
+            
+            const ld = document.getElementById("loadingDiv");
+            const sidebar = document.getElementById("playlistSidebar");
+            const playlistLoadingSpinner = document.getElementById("playlistLoadingSpinner");
+            const playlistVideosDiv = document.getElementById("playlistVideos");
+            
+            ld.style.display = "block";
+            const modal = document.getElementById("videoModal");
+            modal.style.display = "flex";
+            sidebar.style.display = "block";
+            sidebar.classList.add('loading');
+            playlistLoadingSpinner.style.display = "flex";
+            playlistVideosDiv.innerHTML = "";
+            
+            currentPlaylistVideos = [];
+    
+                    try {
+                        const playlistData = await fetchData(`${API_BASE}/playlists/${playlistId}?page=${page}`);
+                        
+                        if (page === 1) {
+                            const trackRes = await trackEvent('/api/track/search', { query: `Opened Playlist: ${playlistData.title}` });
+                            if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
+                        }
+                        
+                        const newVideos = (playlistData.videos || []).map(item => ({                    id: item.videoId,
+                    title: item.title,
+                    thumbnail: item.videoThumbnails ? item.videoThumbnails[0].url : "",
+                    channel: item.author,
+                    viewCount: item.viewCount,
+                    published: item.published
+                }));
+    
+                currentPlaylistVideos = newVideos;
+                // Apply current sort immediately if sidebar is open
+                if(currentSort !== 'relevance') {
+                    currentPlaylistVideos = clientSideSort(currentPlaylistVideos, currentSort);
+                }
+    
+                sidebar.classList.remove('loading');
+                playlistLoadingSpinner.style.display = "none";
+                ld.style.display = "none";
+    
+                if (currentPlaylistVideos.length > 0) {
+                    openVideoWithPlaylist(currentPlaylistVideos[0].id, 0);
+                } else {
+                    playlistVideosDiv.innerHTML = "<p style='text-align:center;color:var(--text-muted);padding:2rem;'>No videos found in this playlist.</p>";
+                }
+            } catch (err) {
+                sidebar.classList.remove('loading');
+                playlistLoadingSpinner.style.display = "none";
+                ld.style.display = "none";
+                alert(`Error loading playlist: ${err.message}`);
+            }
+        }
+    
+            function openVideoWithPlaylist(videoId, index) {
+                let title = "Unknown Video";
+                if (currentPlaylistVideos && currentPlaylistVideos[index]) {
+                    title = currentPlaylistVideos[index].title;
+                }
+        
+                trackEvent('/api/track/videoClick', { 
+                    searchId: currentSearchId,
+                    videoId: videoId,
+                    title: title 
+                });
+        
+                const modal = document.getElementById("videoModal");            const sidebar = document.getElementById("playlistSidebar");
+            const playlistVideosDiv = document.getElementById("playlistVideos");
+    
+            modal.style.display = "flex";
+            currentVideoId = videoId;
+            currentPlaylistIndex = index;
+    
+            sidebar.style.display = "block";
+            updateAutoplayButton();
+            
+            renderPlaylistSidebar();
+    
+            initYouTubePlayer(videoId);
+        }
+        
+        function renderPlaylistSidebar() {
+            const playlistVideosDiv = document.getElementById("playlistVideos");
+            playlistVideosDiv.innerHTML = currentPlaylistVideos.map((v, i) => {
+                const thumb = resolveThumbnail(v.thumbnail);
+                return `
+                <div class="playlist-video-item ${i === currentPlaylistIndex ? 'active' : ''}" onclick="playPlaylistVideo('${v.id}', ${i})">
+                    <img src="${thumb}" class="playlist-video-thumb" alt="${v.title}" onerror="getFallbackImage(this, '${v.id}')">
+                    <div class="playlist-video-info">
+                        <div class="playlist-video-title">${v.title}</div>
+                        <div class="playlist-video-channel">${v.channel}</div>
+                    </div>
+                </div>
+                `;
+            }).join("");
+        }
+    
+            function playPlaylistVideo(videoId, index) {
+                let title = "Unknown Video";
+                if (currentPlaylistVideos && currentPlaylistVideos[index]) {
+                    title = currentPlaylistVideos[index].title;
+                }
+        
+                trackEvent('/api/track/videoClick', { 
+                    searchId: currentSearchId,
+                    videoId: videoId,
+                    title: title 
+                });
+        
+                currentVideoId = videoId;            currentPlaylistIndex = index;
+    
+            document.querySelectorAll('.playlist-video-item').forEach((item, i) => {
+                if (i === index) item.classList.add('active');
+                else item.classList.remove('active');
+            });
+    
+            if (playlistAutoplayEnabled && youtubePlayer && typeof youtubePlayer.loadVideoById === 'function') {
+                try {
+                    youtubePlayer.loadVideoById(videoId);
+                    return;
+                } catch (e) {}
+            }
+            
+            initYouTubePlayer(videoId);
+        }
+    
+        function shufflePlaylist() {
+            if (!currentPlaylistVideos || currentPlaylistVideos.length === 0) return;
+            
+            const shuffled = [...currentPlaylistVideos];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            
+            currentPlaylistVideos = shuffled;
+            
+            const currentIndex = currentPlaylistVideos.findIndex(v => v.id === currentVideoId);
+            const newIndex = currentIndex >= 0 ? currentIndex : 0;
+            currentPlaylistIndex = newIndex;
+            
+            renderPlaylistSidebar();
+        }
+    
+        async function searchVideos(page = 1) {
+            if (currentSearchType !== "video") return;
+            const q = document.getElementById("searchInput").value.trim();
+            if (!q) return;
+    
+            if (currentMode === "search" && lastSearchQuery === q && page === 1 && currentSort === lastSort && currentSearchType === lastSearchType) {
+                return;
+            }
+    
+            if (!canMakeRequest()) await new Promise(r => setTimeout(r, COOLDOWN_MS));
+            lastRequestTime = Date.now();
+    
+            currentMode = "search";
+            lastSearchQuery = q;
+            lastSort = currentSort;
+            lastSearchType = currentSearchType;
+            currentPage = page;
+    
+            const ld = document.getElementById("loadingDiv");
+            const ws = document.getElementById("welcomeScreen");
+            const grid = document.getElementById("videoGrid");
+            const loadMoreBtn = document.getElementById("loadMoreBtn");
+    
+            if (page === 1) {
+                ld.style.display = "block";
+                ws.style.display = "none";
+                grid.innerHTML = "";
+                videos = [];
+            }
+    
+            try {
+                const searchResults = await fetchData(
+                    `${API_BASE}/search?q=${encodeURIComponent(q)}&type=video&page=${page}&sort=${currentSort}`
+                );
+    
+                                                    if (page === 1) {
+    
+                                                        const trackRes = await trackEvent('/api/track/search', { query: `Channel: ${q}` });
+    
+                                                        if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
+    
+                                                    }
+    
+                                        
+    
+                                                    if (!searchResults.length && page === 1) {                    grid.innerHTML = "<p>No results found.</p>";
+                    loadMoreBtn.style.display = "none";
+                    ld.style.display = "none";
+                    return;
+                }
+    
+                videos = videos.concat(searchResults);
+                displayVideos();
+    
+                if (searchResults.length > 0) {
+                    loadMoreBtn.style.display = "inline-block";
+                    loadMoreBtn.disabled = false;
+                } else {
+                    loadMoreBtn.style.display = "none";
+                }
+            } catch (err) {
+                if (page === 1) grid.innerHTML = `<p>Error searching videos: ${err.message}</p>`;
+                loadMoreBtn.style.display = "none";
+            } finally {
+                ld.style.display = "none";
+            }
+        }
+    
+        async function searchChannels(page = 1) {
+            if (currentSearchType !== "channel") return;
+            const q = document.getElementById("searchInput").value.trim();
+            if (!q) return;
+    
+            if (currentMode === "channel-search" && lastSearchQuery === q && page === 1 && currentSort === lastSort) {
+                return;
+            }
+    
+            if (!canMakeRequest()) await new Promise(r => setTimeout(r, COOLDOWN_MS));
+            lastRequestTime = Date.now();
+    
+            currentMode = "channel-search";
+            lastSearchQuery = q;
+            lastSearchType = currentSearchType;
+            lastSort = currentSort;
+            currentPage = page;
+    
+            const ld = document.getElementById("loadingDiv");
+            const ws = document.getElementById("welcomeScreen");
+            const grid = document.getElementById("videoGrid");
+            const loadMoreBtn = document.getElementById("loadMoreBtn");
+    
+            if (page === 1) {
+                ld.style.display = "block";
+                ws.style.display = "none";
+                grid.innerHTML = "";
+                channelResults = [];
+            }
+    
+            try {
+                const searchResults = await fetchData(
+                    `${API_BASE}/search?q=${encodeURIComponent(q)}&type=channel&page=${page}&sort=${currentSort}`
+                );
+    
+                                        if (page === 1) {
+    
+                                            const trackRes = await trackEvent('/api/track/search', { query: q });
+    
+                                            if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
+    
+                                        }
+    
+                            
+    
+                                        if (!searchResults.length && page === 1) {                    grid.innerHTML = "<p>No channels found.</p>";
+                    loadMoreBtn.style.display = "none";
+                    ld.style.display = "none";
+                    return;
+                }
+    
+                channelResults = channelResults.concat(searchResults);
+                displayChannels();
+    
+                if (searchResults.length > 0) {
+                    loadMoreBtn.style.display = "inline-block";
+                    loadMoreBtn.disabled = false;
+                } else {
+                    loadMoreBtn.style.display = "none";
+                }
+            } catch (err) {
+                if (page === 1) grid.innerHTML = `<p>Error searching channels: ${err.message}</p>`;
+                loadMoreBtn.style.display = "none";
+            } finally {
+                ld.style.display = "none";
+            }
+        }
+    
+        function displayChannels() {
+            const grid = document.getElementById("videoGrid");
+            grid.innerHTML = channelResults.map(c => {
+                const title = c.author.replace(/"/g, "&quot;");
+                const safeTitle = title.replace(/'/g, "\\'"); 
+                const desc = (c.description || "").replace(/"/g, "&quot;");
+                let rawThumb = c.authorThumbnails ? c.authorThumbnails[c.authorThumbnails.length - 1].url : "";
+                const thumb = resolveThumbnail(rawThumb);
+                const channelId = c.authorId;
+                return `
+                    <div class="video-card" onclick="loadChannelVideosById('${channelId}', '${safeTitle}')">
+                        <div class="video-thumbnail">
+                            <img src="${thumb}" alt="${title}" style="object-fit: contain; padding: 10px; background: #000;" onerror="this.src='https://via.placeholder.com/300x200?text=No+Channel+Icon'">
+                            <div class="play-overlay">👤</div>
+                        </div>
+                        <div class="video-info">
+                            <h3 class="video-title">${title}</h3>
+                            <p class="video-channel">Subscribers: ${formatViewCount(c.subCount)}</p>
+                            <p class="video-channel">${desc.substring(0, 100)}${desc.length > 100 ? "..." : ""}</p>
+                        </div>
+                    </div>`;
+            }).join("");
+        }
+    
+            function displayVideos() {
+                const grid = document.getElementById("videoGrid");
+                grid.innerHTML = videos.map(v => {
+                    const views = formatViewCount(v.viewCount);
+                    const dur = formatSeconds(v.lengthSeconds);
+                    const date = v.publishedText || formatTimestamp(v.published);
+                    const title = v.title.replace(/"/g, "&quot;");
+                    
+                    // Handle both API structure (videoThumbnails) and manual structure (thumbnail)
+                    let rawThumb = (v.videoThumbnails && v.videoThumbnails.length > 0) ? v.videoThumbnails[0].url : (v.thumbnail || "");
+                    
+                    // Use resolveThumbnail to ensure absolute URL
+                    const thumb = resolveThumbnail(rawThumb);
+                    
+                    return `
+                        <div class="video-card" onclick="openVideo('${v.videoId}')">
+                            <div class="video-thumbnail">
+                                <img src="${thumb}" alt="${title}" onerror="getFallbackImage(this, '${v.videoId}')">
+                                <div class="play-overlay">▶</div>
+                                ${dur ? `<div class="video-duration">⏱ ${dur}</div>` : ""}
+                            </div>
+                            <div class="video-info">
+                                <h3 class="video-title">${title}</h3>
+                                <p class="video-channel">${v.author}</p>
+                                <div class="video-meta">
+                                    <span>👁 ${views} views</span>
+                                    <span>${date}</span>
+                                </div>
+                            </div>
+                        </div>`;
+                }).join("");
+            }    function openVideo(id) {
+        let title = "Unknown Video";
+        const videoObj = videos.find(v => v.videoId === id);
+        if (videoObj) title = videoObj.title;
+
+        trackEvent('/api/track/videoClick', { 
+            searchId: currentSearchId,
+            videoId: id,
+            title: title 
+        });
+
+        const modal = document.getElementById("videoModal");
+        const iframe = document.getElementById("videoIframe");
+        const sidebar = document.getElementById("playlistSidebar");
+        
+        modal.style.display = "flex";
+        currentVideoId = id;
+        sidebar.style.display = "none";
+        currentPlaylistId = null;
+        currentPlaylistVideos = [];
+        currentPlaylistIndex = 0;
+
+        if (youtubePlayer) {
+            try { youtubePlayer.destroy(); } catch (e) {}
+            youtubePlayer = null;
+        }
+
+        iframe.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&modestbranding=1`;
+    }
+
+    function closeVideo() {
+        const modal = document.getElementById("videoModal");
+        const iframe = document.getElementById("videoIframe");
+        
+        if (youtubePlayer) {
+            try { youtubePlayer.destroy(); } catch (e) {}
+            youtubePlayer = null;
+        }
+
+        iframe.src = "";
+        modal.style.display = "none";
+        currentVideoId = null;
+        currentPlaylistId = null;
+        currentPlaylistVideos = [];
+        currentPlaylistIndex = 0;
+    }
+
+    function openVideoInNewTab() {
+        if (!currentVideoId) return;
+        const url = `https://www.youtube-nocookie.com/embed/${currentVideoId}?autoplay=1&rel=0&modestbranding=1`;
+        const newWindow = window.open('about:blank', '_blank');
+        if (newWindow) {
+            newWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head><title>WeTube Video</title></head>
+                <body style="margin:0;padding:0;background:#000;">
+                <iframe src="${url}" style="width:100vw;height:100vh;border:none;" allowfullscreen></iframe>
+                </body>
+                </html>
+            `);
+            newWindow.document.close();
+        }
+    }
+
+    function copyVideoUrl() {
+        if (!currentVideoId) return;
+        const url = `https://www.youtube.com/watch?v=${currentVideoId}`;
+        navigator.clipboard.writeText(url).then(() => {
+            const btn = document.getElementById("copyUrlBtn");
+            btn.textContent = "✅ Copied!";
+            setTimeout(() => {
+                btn.innerHTML = '🔗 Copy URL';
+            }, 2000);
+        }).catch(err => {
+            alert("Failed to copy URL");
+        });
+    }
+
+    function promptAndOpenYoutubeUrl() {
+        const url = prompt("Paste a YouTube video or playlist URL:");
+        if (!url) return;
+        
+        // Track the import
+        trackEvent('/api/track/search', { query: `Import URL: ${url}` }).then(res => {
+            if (res && res.searchId) currentSearchId = res.searchId;
+        });
+
+        const playlistId = extractPlaylistId(url);
+        if (playlistId) {
+            openPlaylist(playlistId);
+            return;
+        }
+        
+        const videoId = extractYoutubeId(url);
+        if (!videoId) {
+            alert("Could not extract a valid YouTube video or playlist ID from the URL.");
+            return;
+        }
+        openVideo(videoId);
+    }
+
+    function extractPlaylistId(url) {
+        try {
+            const patterns = [
+                /[?&]list=([a-zA-Z0-9_-]+)/,
+                /youtube\.com\/playlist\?list=([a-zA-Z0-9_-]+)/
+            ];
+            for (const re of patterns) {
+                const m = url.match(re);
+                if (m && m[1]) return m[1];
+            }
+        } catch {}
+        return null;
+    }
+
+    function extractYoutubeId(url) {
+        try {
+            const patterns = [
+                /(?:youtube\.com\/.*v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+                /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/
+            ];
+            for (const re of patterns) {
+                const m = url.match(re);
+                if (m && m[1]) return m[1];
+            }
+            if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
+        } catch {}
+        return null;
+    }
+
+    function loadMoreVideos() {
+        if (!canMakeRequest()) return;
+        
+        if (currentMode === "search") {
+            currentPage++;
+            searchVideos(currentPage);
+        } else if (currentMode === "channel") {
+            currentPage++;
+            if (currentChannelId && currentChannelName) {
+                 loadChannelVideosById(currentChannelId, currentChannelName, currentPage);
+            } else {
+                loadChannelVideos(currentPage);
+            }
+        } else if (currentMode === "channel-search") {
+            currentPage++;
+            searchChannels(currentPage);
+        } else if (currentMode === "search-playlist") {
+            currentPage++;
+            searchPlaylists(currentPage);
+        }
+    }
+
+    async function loadChannelVideos(page = 1) {
+        if (!canMakeRequest()) await new Promise(r => setTimeout(r, COOLDOWN_MS));
+        lastRequestTime = Date.now();
+
+        currentMode = "channel";
+        lastSearchQuery = "";
+        currentPage = page;
+        
+        currentChannelName = "Hicksville Video Productions";
+        currentChannelId = "UCNH7ejvJvMRcHAwKpyV_ijw"; // Hardcoded for this specific button
+
+        const ld = document.getElementById("loadingDiv");
+        const ws = document.getElementById("welcomeScreen");
+        const grid = document.getElementById("videoGrid");
+        const loadMoreBtn = document.getElementById("loadMoreBtn");
+
+        if (page === 1) {
+            ld.style.display = "block";
+            ws.style.display = "none";
+            grid.innerHTML = "";
+            videos = [];
+        }
+
+        try {
+            // We want to present 20 videos per user-visible page.
+            const TARGET_PER_PAGE = 20;
+            let fetchPage = page;
+            let collected = [];
+            const seen = new Set();
+
+            // Helper: fetch one backend page using a few fallbacks (keeps previous logic localized)
+            async function fetchOneBackendPage(p) {
+                try {
+                    // Try channel-specific endpoint first (often returns multiple videos per page)
+                    try {
+                        const channelVideosUrl = `${API_BASE}/channels/${currentChannelId}/videos?page=${p}`;
+                        const channelVideos = await fetchData(channelVideosUrl).catch(() => null) || [];
+                        if (channelVideos && channelVideos.length) {
+                            console.debug('fetchOneBackendPage: channel endpoint', channelVideosUrl, 'count', channelVideos.length);
+                            return channelVideos.map(item => ({
+                                videoId: item.videoId || item.id || item.video_id,
+                                title: item.title,
+                                videoThumbnails: item.videoThumbnails || item.thumbnails || [],
+                                author: currentChannelName,
+                                authorId: currentChannelId,
+                                viewCount: item.viewCount,
+                                published: item.published,
+                                lengthSeconds: item.lengthSeconds
+                            }));
+                        }
+                    } catch (e) { /* ignore */ }
+
+                    const searchUrl = `${API_BASE}/search?q=${encodeURIComponent('"Hicksville Video Productions"')}&type=video&page=${p}&sort=date`;
+                    const searchData = await fetchData(searchUrl).catch(() => null) || [];
+                    console.debug('fetchOneBackendPage: search', searchUrl, 'count', (searchData || []).length);
+
+                    // Prefer items from the known channel id
+                    let pageItems = (searchData || []).filter(v => v.authorId === currentChannelId);
+
+                    // If none, try handle fallback
+                    if (!pageItems.length) {
+                        const fallbackUrl = `${API_BASE}/search?q=${encodeURIComponent(HICKSVILLE_HANDLE)}&type=video&page=${p}`;
+                        const fallbackData = await fetchData(fallbackUrl).catch(() => null) || [];
+                        console.debug('fetchOneBackendPage: handle fallback', fallbackUrl, 'count', (fallbackData || []).length);
+                        if (fallbackData && fallbackData.length) pageItems = fallbackData;
+                    }
+
+                    return pageItems;
+                } catch (e) {
+                    console.debug('fetchOneBackendPage error', e);
+                    return [];
+                }
+            }
+
+            const MAX_BACKEND_PAGES = 10;
+            let backendPagesTried = 0;
+            while (collected.length < TARGET_PER_PAGE && backendPagesTried < MAX_BACKEND_PAGES) {
+                const pageItems = await fetchOneBackendPage(fetchPage);
+                if (!pageItems || pageItems.length === 0) break;
+
+                for (const it of pageItems) {
+                    const id = it.videoId || it.id || it.video_id || (it.videoThumbnails && it.videoThumbnails[0] && it.videoThumbnails[0].url) || null;
+                    const vid = it.videoId || it.id || it.videoId || id;
+                    if (!vid) continue;
+                    if (seen.has(vid)) continue;
+                    seen.add(vid);
+                    collected.push({
+                        id: vid,
+                        videoId: vid,
+                        title: it.title || it.videoTitle || '' ,
+                        thumbnail: (it.videoThumbnails && it.videoThumbnails[0] && it.videoThumbnails[0].url) || it.thumbnail || '',
+                        author: it.author || currentChannelName,
+                        authorId: it.authorId || currentChannelId,
+                        viewCount: it.viewCount,
+                        published: it.published,
+                        lengthSeconds: it.lengthSeconds
+                    });
+                    if (collected.length >= TARGET_PER_PAGE) break;
+                }
+
+                // If backend returned fewer than expected, try next backend page
+                fetchPage++;
+                backendPagesTried++;
+            }
+
+            if (page === 1) {
+                const trackRes = await trackEvent('/api/track/search', { query: `Channel: ${currentChannelName}` });
+                if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
+            }
+
+            // If nothing collected on first page, show message
+            if (collected.length === 0 && page === 1) {
+                grid.innerHTML = "<p>No videos found.</p>";
+                loadMoreBtn.style.display = "none";
+                ld.style.display = "none";
+                return;
+            }
+
+            // Append collected videos (up to TARGET_PER_PAGE)
+            videos = videos.concat(collected.slice(0, TARGET_PER_PAGE));
+            videos = clientSideSort(videos, currentSort);
+
+            displayVideos();
+
+            // Update currentPage to the last backend page we consumed
+            currentPage = Math.max(1, fetchPage - 1);
+
+            // Show load more if we fetched at least one backend page (there may be more)
+            if (collected.length >= TARGET_PER_PAGE || fetchPage > page) {
+                loadMoreBtn.style.display = "inline-block";
+                loadMoreBtn.disabled = false;
+            } else {
+                loadMoreBtn.style.display = "none";
+            }
+        } catch (err) {
+            console.error(err);
+            if (page === 1) grid.innerHTML = `<p>Error loading videos: ${err.message}</p>`;
+            loadMoreBtn.style.display = "none";
+        } finally {
+            if (page === 1) ld.style.display = "none";
+        }
+    }
+
+    async function loadChannelVideosById(channelId, channelName, page = 1) {
+        if (!canMakeRequest()) await new Promise(r => setTimeout(r, COOLDOWN_MS));
+        lastRequestTime = Date.now();
+
+        currentMode = "channel";
+        lastSearchQuery = "";
+        currentPage = page;
+        
+        currentChannelName = channelName; 
+        currentChannelId = channelId;
+
+        const ld = document.getElementById("loadingDiv");
+        const ws = document.getElementById("welcomeScreen");
+        const grid = document.getElementById("videoGrid");
+        const loadMoreBtn = document.getElementById("loadMoreBtn");
+
+        if (page === 1) {
+            ld.style.display = "block";
+            ws.style.display = "none";
+            grid.innerHTML = "";
+            videos = [];
+        }
+
+        try {
+            // Aim: always load ~20 videos per visible "page" and let Load More fetch the next ~20.
+            const TARGET_PER_PAGE = 20;
+            let fetchPage = page;
+            let collected = [];
+            const seen = new Set();
+
+            // Helper: try various backend searches for one backend page and return raw items
+            async function fetchBackendPage(p) {
+                try {
+                    // Try channel-specific endpoint first
+                    try {
+                        const channelVideosUrl = `${API_BASE}/channels/${channelId}/videos?page=${p}`;
+                        const channelVideos = await fetchData(channelVideosUrl).catch(() => null) || [];
+                        if (channelVideos && channelVideos.length) {
+                            console.debug('fetchBackendPage: channel endpoint', channelVideosUrl, 'count', channelVideos.length);
+                            return channelVideos.map(item => ({
+                                videoId: item.videoId || item.id || item.video_id,
+                                title: item.title,
+                                videoThumbnails: item.videoThumbnails || item.thumbnails || [],
+                                author: channelName,
+                                authorId: channelId,
+                                viewCount: item.viewCount,
+                                published: item.published,
+                                lengthSeconds: item.lengthSeconds
+                            }));
+                        }
+                    } catch (e) { /* ignore */ }
+
+                    const query = `"${channelName}"`;
+                    const searchUrl = `${API_BASE}/search?q=${encodeURIComponent(query)}&type=video&page=${p}&sort=date`;
+                    const newVideos = await fetchData(searchUrl).catch(() => null) || [];
+                    console.debug('fetchBackendPage: search', searchUrl, 'count', (newVideos || []).length);
+
+                    // Try relaxed matching first
+                    let filtered = (newVideos || []).filter(v => {
+                        try {
+                            if (!v) return false;
+                            if (v.authorId && v.authorId === channelId) return true;
+                            if (v.author && v.author === channelName) return true;
+                            return false;
+                        } catch (e) { return false; }
+                    });
+
+                    // If still empty, try channelId param search
+                    if ((!filtered || filtered.length === 0)) {
+                        try {
+                            const byIdUrl = `${API_BASE}/search?channelId=${encodeURIComponent(channelId)}&type=video&page=${p}&sort=date`;
+                            const byIdResults = await fetchData(byIdUrl).catch(() => null) || [];
+                            console.debug('fetchBackendPage: byId', byIdUrl, 'count', (byIdResults || []).length);
+                            if (byIdResults && byIdResults.length) filtered = byIdResults;
+                        } catch (e) { /* ignore */ }
+                    }
+
+                    // If still empty, try raw id in query
+                    if ((!filtered || filtered.length === 0)) {
+                        try {
+                            const idQueryUrl = `${API_BASE}/search?q=${encodeURIComponent(channelId)}&type=video&page=${p}&sort=date`;
+                            const idQueryResults = await fetchData(idQueryUrl).catch(() => null) || [];
+                            console.debug('fetchBackendPage: idQuery', idQueryUrl, 'count', (idQueryResults || []).length);
+                            if (idQueryResults.length) filtered = idQueryResults;
+                        } catch (e) { /* ignore */ }
+                    }
+
+                    // Final fallback: accept raw newVideos if nothing else matched
+                    if ((!filtered || filtered.length === 0) && newVideos.length > 0) filtered = newVideos;
+
+                    return filtered || [];
+                } catch (e) { console.debug('fetchBackendPage error', e); return []; }
+            }
+
+            const MAX_BACKEND_PAGES = 10;
+            let backendPagesTried = 0;
+            while (collected.length < TARGET_PER_PAGE && backendPagesTried < MAX_BACKEND_PAGES) {
+                const pageItems = await fetchBackendPage(fetchPage);
+                if (!pageItems || pageItems.length === 0) break;
+
+                for (const it of pageItems) {
+                    const vid = it.videoId || it.id || it.videoId || (it.videoThumbnails && it.videoThumbnails[0] && it.videoThumbnails[0].url) || null;
+                    if (!vid) continue;
+                    if (seen.has(vid)) continue;
+                    seen.add(vid);
+                    collected.push({
+                        id: vid,
+                        videoId: vid,
+                        title: it.title || '',
+                        thumbnail: (it.videoThumbnails && it.videoThumbnails[0] && it.videoThumbnails[0].url) || it.thumbnail || '',
+                        author: it.author || channelName,
+                        authorId: it.authorId || channelId,
+                        viewCount: it.viewCount,
+                        published: it.published,
+                        lengthSeconds: it.lengthSeconds
+                    });
+                    if (collected.length >= TARGET_PER_PAGE) break;
+                }
+                fetchPage++;
+                backendPagesTried++;
+            }
+
+            if (page === 1) {
+                const trackRes = await trackEvent('/api/track/search', { query: `Channel: ${currentChannelName}` });
+                if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
+            }
+
+            if (collected.length === 0 && page === 1) {
+                grid.innerHTML = "<p>No videos found for this channel via search.</p>";
+                loadMoreBtn.style.display = "none";
+                ld.style.display = "none";
+                return;
+            }
+
+            videos = videos.concat(collected.slice(0, TARGET_PER_PAGE));
+            videos = clientSideSort(videos, currentSort);
+
+            displayVideos();
+
+            // Update currentPage to last backend page consumed
+            currentPage = Math.max(1, fetchPage - 1);
+
+            if (collected.length >= TARGET_PER_PAGE || fetchPage > page) {
+                loadMoreBtn.style.display = "inline-block";
+                loadMoreBtn.disabled = false;
+            } else {
+                loadMoreBtn.style.display = "none";
+            }
+        } catch (err) {
+            if (page === 1) grid.innerHTML = `<p>Error loading channel videos: ${err.message}</p>`;
+            loadMoreBtn.style.display = "none";
+        } finally {
+            if (page === 1) ld.style.display = "none";
+        }
+    }
+
+    function toggleDarkMode() {
+        const body = document.body;
+        body.classList.toggle('dark-mode');
+        if (body.classList.contains('dark-mode')) {
+            try { localStorage.setItem('wetube-dark', '1'); } catch (e) {}
+            document.getElementById('darkModeToggle').textContent = "☀️";
+        } else {
+            try { localStorage.removeItem('wetube-dark'); } catch (e) {}
+            document.getElementById('darkModeToggle').textContent = "🌙";
+        }
+    }
+
+    function initFilters() {
+        // Force reset filters on load as requested
+        const sortSelect = document.getElementById('sortSelect');
+        const typeSelect = document.getElementById('searchTypeSelect');
+        if (sortSelect) sortSelect.value = 'relevance';
+        if (typeSelect) typeSelect.value = 'video';
+        currentSort = 'relevance';
+        currentSearchType = 'video';
+    }
+
+    const CURRENT_APP_VERSION = "1.5";
+
+    function checkAppVersion() {
+        try {
+            const storedVersion = localStorage.getItem('wetube_version');
+            if (storedVersion !== CURRENT_APP_VERSION) {
+                document.getElementById('updatePopup').style.display = 'flex';
+            }
+        } catch (e) {
+            // If localStorage fails, we might as well show the popup or suppress error
+            // For safety, let's show it if we can't verify version
+            document.getElementById('updatePopup').style.display = 'flex';
+        }
+    }
+
+    function closeUpdatePopup() {
+        try {
+            localStorage.setItem('wetube_version', CURRENT_APP_VERSION);
+        } catch (e) {
+            console.warn('Could not save version to localStorage:', e);
+        }
+        document.getElementById('updatePopup').style.display = 'none';
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        try {
+            // Default to dark mode when user has no explicit preference stored
+            const stored = localStorage.getItem('wetube-dark');
+            const isDarkMode = stored === null ? true : stored === '1';
+            if (isDarkMode) {
+                document.body.classList.add('dark-mode');
+                document.getElementById('darkModeToggle').textContent = "☀️";
+                try { localStorage.setItem('wetube-dark', '1'); } catch (e) {}
+            } else {
+                document.body.classList.remove('dark-mode');
+                document.getElementById('darkModeToggle').textContent = "🌙";
+            }
+        } catch (e) {
+            console.warn('Error applying dark mode state:', e);
+        }
+
+        loadAutoplaySetting();
+        initFilters();
+        checkAppVersion();
+    });
+</script>
+
+</body>
+</html>
