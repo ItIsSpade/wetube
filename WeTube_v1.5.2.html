@@ -740,7 +740,7 @@
             <div class="update-icon">🚀</div>
             <h2 class="update-title">Welcome to WeTube v1.5.1!</h2>
             <p class="update-text">
-                I fixed the channel search so it actually works again 🙏 
+                I fixed the channel search so it actually works again 🙏 And a "resume watching" popup has been added. 
                 If anything has stopped working because of this change, please let Zane know and he'll try to fix it :) Happy watching!
             </p>
             <div class="update-actions">
@@ -823,6 +823,23 @@
                     </div>
                     <div id="playlistVideos"></div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="continueWatchingModal" class="update-modal" style="display: none;">
+        <div class="update-modal-content" style="max-width: 600px; text-align: left;">
+            <h2 class="update-title" style="margin-bottom: 1rem; text-align: center;">Continue Watching?</h2>
+            <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem;">
+                <img id="continueThumb" src="" style="width: 160px; height: 90px; object-fit: cover; border-radius: 8px; flex-shrink: 0; background: #000;">
+                <div style="flex: 1; min-width: 0;">
+                    <h3 id="continueTitle" style="font-size: 1.1rem; margin-bottom: 0.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--navy);"></h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">You were watching this video.</p>
+                </div>
+            </div>
+            <div class="update-actions" style="justify-content: flex-end; margin-top: 1.5rem;">
+                <button class="channel-btn" onclick="clearWatchState()" style="border: 1px solid var(--text-muted); color: inherit; background: rgba(0,0,0,0.05); margin-right: 0.5rem; display: inline-block;">No Thanks</button>
+                <button class="update-btn" onclick="resumeVideo()" style="padding: 0.7rem 1.5rem; font-size: 1rem;">Continue</button>
             </div>
         </div>
     </div>
@@ -956,13 +973,16 @@
         updateAutoplayButton();
     }
 
-    function initYouTubePlayer(videoId) {
+    function initYouTubePlayer(videoId, startTime = 0) {
         const iframe = document.getElementById("videoIframe");
         if (!iframe) return;
 
-        iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`;
+        let src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`;
+        if (startTime > 0) src += `&start=${Math.floor(startTime)}`;
+        iframe.src = src;
 
-        if (playlistAutoplayEnabled && window.YT && window.YT.Player) {
+        // Always initialize the API player to enable time tracking (getCurrentTime)
+        if (window.YT && window.YT.Player) {
             setTimeout(() => {
                 try {
                     if (youtubePlayer) {
@@ -975,7 +995,8 @@
                             autoplay: 1,
                             rel: 0,
                             modestbranding: 1,
-                            enablejsapi: 1
+                            enablejsapi: 1,
+                            start: Math.floor(startTime)
                         },
                         events: {
                             'onReady': onPlayerReady,
@@ -987,11 +1008,6 @@
                     youtubePlayer = null;
                 }
             }, 500);
-        } else {
-            if (youtubePlayer) {
-                try { youtubePlayer.destroy(); } catch (e) {}
-                youtubePlayer = null;
-            }
         }
     }
 
@@ -1076,6 +1092,8 @@
     }
 
     let currentVideoId = null;
+    let currentVideoThumbnail = "";
+    let currentVideoTitle = "";
     let currentSort = "relevance";
     let currentSearchType = "video";
     let lastSort = "relevance";
@@ -1307,7 +1325,11 @@
                 let title = "Unknown Video";
                 if (currentPlaylistVideos && currentPlaylistVideos[index]) {
                     title = currentPlaylistVideos[index].title;
+                    currentVideoThumbnail = resolveThumbnail(currentPlaylistVideos[index].thumbnail);
+                } else {
+                    currentVideoThumbnail = "";
                 }
+                currentVideoTitle = title;
         
                 trackEvent('/api/track/videoClick', { 
                     searchId: currentSearchId,
@@ -1350,7 +1372,11 @@
                 let title = "Unknown Video";
                 if (currentPlaylistVideos && currentPlaylistVideos[index]) {
                     title = currentPlaylistVideos[index].title;
+                    currentVideoThumbnail = resolveThumbnail(currentPlaylistVideos[index].thumbnail);
+                } else {
+                    currentVideoThumbnail = "";
                 }
+                currentVideoTitle = title;
         
                 trackEvent('/api/track/videoClick', { 
                     searchId: currentSearchId,
@@ -1586,10 +1612,23 @@
                 }).join("");
             }    function openVideo(id, titleOverride = null) {
         let title = titleOverride || "Unknown Video";
-        if (!titleOverride) {
-            const videoObj = videos.find(v => v.videoId === id);
-            if (videoObj) title = videoObj.title;
+        currentVideoThumbnail = "";
+        
+        const videoObj = videos.find(v => v.videoId === id);
+        if (videoObj) {
+             let rawThumb = (videoObj.videoThumbnails && videoObj.videoThumbnails.length > 0) ? videoObj.videoThumbnails[0].url : (videoObj.thumbnail || "");
+             currentVideoThumbnail = resolveThumbnail(rawThumb);
+             if (!titleOverride) title = videoObj.title;
+        } else {
+             // Fallback: Check playlist videos if available
+             const plVideo = currentPlaylistVideos.find(v => v.id === id);
+             if (plVideo) {
+                 currentVideoThumbnail = resolveThumbnail(plVideo.thumbnail);
+                 if (!titleOverride) title = plVideo.title;
+             }
         }
+        
+        currentVideoTitle = title;
 
         trackEvent('/api/track/videoClick', { 
             searchId: currentSearchId,
@@ -1613,7 +1652,7 @@
             youtubePlayer = null;
         }
 
-        iframe.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&modestbranding=1`;
+        initYouTubePlayer(id);
     }
 
     function closeVideo() {
@@ -1631,6 +1670,9 @@
         currentPlaylistId = null;
         currentPlaylistVideos = [];
         currentPlaylistIndex = 0;
+        
+        // Clear continue watching state as user manually closed the video
+        localStorage.removeItem('wetube-continue-watching');
     }
 
     function openVideoInNewTab() {
@@ -1861,6 +1903,136 @@
         currentSearchType = 'video';
     }
 
+    function saveWatchState() {
+        if (currentVideoId && document.getElementById("videoModal").style.display !== "none") {
+            let time = 0;
+            if (youtubePlayer && typeof youtubePlayer.getCurrentTime === 'function') {
+                try {
+                    time = youtubePlayer.getCurrentTime();
+                } catch(e) {}
+            }
+            
+            const state = {
+                videoId: currentVideoId,
+                title: currentVideoTitle || "Unknown Video",
+                thumbnail: currentVideoThumbnail || "",
+                time: time,
+                playlistId: currentPlaylistId,
+                playlistIndex: currentPlaylistIndex,
+                playlistVideos: currentPlaylistVideos
+            };
+            
+            localStorage.setItem('wetube-continue-watching', JSON.stringify(state));
+        }
+    }
+
+    window.addEventListener('beforeunload', saveWatchState);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') saveWatchState();
+    });
+    setInterval(saveWatchState, 5000);
+
+    function checkWatchState() {
+        const raw = localStorage.getItem('wetube-continue-watching');
+        if (!raw) return;
+        
+        try {
+            const state = JSON.parse(raw);
+            if (!state.videoId) {
+                localStorage.removeItem('wetube-continue-watching');
+                return;
+            }
+
+            document.getElementById('continueTitle').textContent = state.title || "Unknown Video";
+            
+            const thumbImg = document.getElementById('continueThumb');
+            thumbImg.src = state.thumbnail || `https://i.ytimg.com/vi/${state.videoId}/hqdefault.jpg`;
+            thumbImg.onerror = function() { this.src = "https://via.placeholder.com/160x90?text=No+Thumbnail"; };
+            
+            document.getElementById('continueWatchingModal').style.display = 'flex';
+        } catch (e) {
+            console.error("Error parsing continue watching state", e);
+            localStorage.removeItem('wetube-continue-watching');
+        }
+    }
+
+    function clearWatchState() {
+        localStorage.removeItem('wetube-continue-watching');
+        document.getElementById('continueWatchingModal').style.display = 'none';
+    }
+
+    function resumeVideo() {
+        const raw = localStorage.getItem('wetube-continue-watching');
+        if (!raw) return;
+        
+        let state;
+        try {
+            state = JSON.parse(raw);
+        } catch(e) {
+            clearWatchState();
+            return;
+        }
+        
+        clearWatchState();
+        
+        if (state.playlistId) {
+             currentPlaylistId = state.playlistId;
+             currentPlaylistVideos = state.playlistVideos || [];
+             
+             const modal = document.getElementById("videoModal");
+             const sidebar = document.getElementById("playlistSidebar");
+             const playlistVideosDiv = document.getElementById("playlistVideos");
+     
+             modal.style.display = "flex";
+             sidebar.style.display = "block";
+             
+             currentVideoId = state.videoId;
+             currentPlaylistIndex = state.playlistIndex;
+             currentVideoTitle = state.title;
+             currentVideoThumbnail = state.thumbnail;
+     
+             renderPlaylistSidebar();
+             initYouTubePlayer(state.videoId, state.time);
+             
+             updateAutoplayButton();
+             
+             trackEvent('/api/track/videoClick', { 
+                 searchId: currentSearchId,
+                 videoId: state.videoId,
+                 title: state.title 
+             });
+             
+        } else {
+             // We need to manually set globals that openVideo usually sets but we want custom time
+             currentVideoTitle = state.title;
+             currentVideoThumbnail = state.thumbnail;
+             
+             trackEvent('/api/track/videoClick', { 
+                searchId: currentSearchId,
+                videoId: state.videoId,
+                title: state.title 
+             });
+    
+             const modal = document.getElementById("videoModal");
+             const iframe = document.getElementById("videoIframe");
+             const sidebar = document.getElementById("playlistSidebar");
+            
+             modal.style.display = "flex";
+             currentVideoId = state.videoId;
+             sidebar.style.display = "none";
+             currentPlaylistId = null;
+             currentPlaylistVideos = [];
+             currentPlaylistIndex = 0;
+    
+             if (youtubePlayer) {
+                 try { youtubePlayer.destroy(); } catch (e) {}
+                 youtubePlayer = null;
+             }
+    
+             initYouTubePlayer(state.videoId, state.time);
+        }
+    }
+
     const CURRENT_APP_VERSION = "1.5.1";
 
     function checkAppVersion() {
@@ -1905,6 +2077,7 @@
         loadAutoplaySetting();
         initFilters();
         checkAppVersion();
+        checkWatchState();
     });
 </script>
 
