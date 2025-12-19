@@ -1,3 +1,11 @@
+<!-- PLEASE USE THE HOSTED WEBSITES INSTEAD OF DOWNLOADING THIS, IF YOU USE THE DOWNLOADED VERSION THE YOUTUBE VIDEOS MOST LIKELY WON'T WORK !!-->
+<!-- PLEASE USE THE HOSTED WEBSITES INSTEAD OF DOWNLOADING THIS, IF YOU USE THE DOWNLOADED VERSION THE YOUTUBE VIDEOS MOST LIKELY WON'T WORK !!-->
+<!-- PLEASE USE THE HOSTED WEBSITES INSTEAD OF DOWNLOADING THIS, IF YOU USE THE DOWNLOADED VERSION THE YOUTUBE VIDEOS MOST LIKELY WON'T WORK !!-->
+<!-- PLEASE USE THE HOSTED WEBSITES INSTEAD OF DOWNLOADING THIS, IF YOU USE THE DOWNLOADED VERSION THE YOUTUBE VIDEOS MOST LIKELY WON'T WORK !!-->
+<!-- PLEASE USE THE HOSTED WEBSITES INSTEAD OF DOWNLOADING THIS, IF YOU USE THE DOWNLOADED VERSION THE YOUTUBE VIDEOS MOST LIKELY WON'T WORK !!-->
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -730,9 +738,10 @@
     <div id="updatePopup" class="update-modal" style="display: none;">
         <div class="update-modal-content">
             <div class="update-icon">🚀</div>
-            <h2 class="update-title">Welcome to WeTube v1.5!</h2>
+            <h2 class="update-title">Welcome to WeTube v1.5.1!</h2>
             <p class="update-text">
-                The silly Youtube API that was limiting how many people could use it before, has just been replaced! This means you can now share this with other people who need it, and it will still work just fine for you! If anything has stopped working because of this MAJOR change, please let Zane know and he'll try to fix it :) Happy watching!
+                I fixed the channel search so it actually works again 🙏 And a "resume watching" popup has been added. 
+                If anything has stopped working because of this change, please let Zane know and he'll try to fix it :) Happy watching!
             </p>
             <div class="update-actions">
                 <button class="update-btn" onclick="closeUpdatePopup()">Let's Go!</button>
@@ -814,6 +823,23 @@
                     </div>
                     <div id="playlistVideos"></div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="continueWatchingModal" class="update-modal" style="display: none;">
+        <div class="update-modal-content" style="max-width: 600px; text-align: left;">
+            <h2 class="update-title" style="margin-bottom: 1rem; text-align: center;">Continue Watching?</h2>
+            <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem;">
+                <img id="continueThumb" src="" style="width: 160px; height: 90px; object-fit: cover; border-radius: 8px; flex-shrink: 0; background: #000;">
+                <div style="flex: 1; min-width: 0;">
+                    <h3 id="continueTitle" style="font-size: 1.1rem; margin-bottom: 0.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--navy);"></h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">You were watching this video.</p>
+                </div>
+            </div>
+            <div class="update-actions" style="justify-content: flex-end; margin-top: 1.5rem;">
+                <button class="channel-btn" onclick="clearWatchState()" style="border: 1px solid var(--text-muted); color: inherit; background: rgba(0,0,0,0.05); margin-right: 0.5rem; display: inline-block;">No Thanks</button>
+                <button class="update-btn" onclick="resumeVideo()" style="padding: 0.7rem 1.5rem; font-size: 1rem;">Continue</button>
             </div>
         </div>
     </div>
@@ -947,13 +973,16 @@
         updateAutoplayButton();
     }
 
-    function initYouTubePlayer(videoId) {
+    function initYouTubePlayer(videoId, startTime = 0) {
         const iframe = document.getElementById("videoIframe");
         if (!iframe) return;
 
-        iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`;
+        let src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`;
+        if (startTime > 0) src += `&start=${Math.floor(startTime)}`;
+        iframe.src = src;
 
-        if (playlistAutoplayEnabled && window.YT && window.YT.Player) {
+        // Always initialize the API player to enable time tracking (getCurrentTime)
+        if (window.YT && window.YT.Player) {
             setTimeout(() => {
                 try {
                     if (youtubePlayer) {
@@ -966,7 +995,8 @@
                             autoplay: 1,
                             rel: 0,
                             modestbranding: 1,
-                            enablejsapi: 1
+                            enablejsapi: 1,
+                            start: Math.floor(startTime)
                         },
                         events: {
                             'onReady': onPlayerReady,
@@ -978,11 +1008,6 @@
                     youtubePlayer = null;
                 }
             }, 500);
-        } else {
-            if (youtubePlayer) {
-                try { youtubePlayer.destroy(); } catch (e) {}
-                youtubePlayer = null;
-            }
         }
     }
 
@@ -1067,6 +1092,8 @@
     }
 
     let currentVideoId = null;
+    let currentVideoThumbnail = "";
+    let currentVideoTitle = "";
     let currentSort = "relevance";
     let currentSearchType = "video";
     let lastSort = "relevance";
@@ -1298,7 +1325,11 @@
                 let title = "Unknown Video";
                 if (currentPlaylistVideos && currentPlaylistVideos[index]) {
                     title = currentPlaylistVideos[index].title;
+                    currentVideoThumbnail = resolveThumbnail(currentPlaylistVideos[index].thumbnail);
+                } else {
+                    currentVideoThumbnail = "";
                 }
+                currentVideoTitle = title;
         
                 trackEvent('/api/track/videoClick', { 
                     searchId: currentSearchId,
@@ -1341,7 +1372,11 @@
                 let title = "Unknown Video";
                 if (currentPlaylistVideos && currentPlaylistVideos[index]) {
                     title = currentPlaylistVideos[index].title;
+                    currentVideoThumbnail = resolveThumbnail(currentPlaylistVideos[index].thumbnail);
+                } else {
+                    currentVideoThumbnail = "";
                 }
+                currentVideoTitle = title;
         
                 trackEvent('/api/track/videoClick', { 
                     searchId: currentSearchId,
@@ -1419,13 +1454,13 @@
                     `${API_BASE}/search?q=${encodeURIComponent(q)}&type=video&page=${page}&sort=${currentSort}`
                 );
     
-                                                    if (page === 1) {
+                                                                            if (page === 1) {
     
-                                                        const trackRes = await trackEvent('/api/track/search', { query: `Channel: ${q}` });
+                                                                                const trackRes = await trackEvent('/api/track/search', { query: `Video: ${q}` });
     
-                                                        if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
+                                                                                if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
     
-                                                    }
+                                                                            }
     
                                         
     
@@ -1577,10 +1612,23 @@
                 }).join("");
             }    function openVideo(id, titleOverride = null) {
         let title = titleOverride || "Unknown Video";
-        if (!titleOverride) {
-            const videoObj = videos.find(v => v.videoId === id);
-            if (videoObj) title = videoObj.title;
+        currentVideoThumbnail = "";
+        
+        const videoObj = videos.find(v => v.videoId === id);
+        if (videoObj) {
+             let rawThumb = (videoObj.videoThumbnails && videoObj.videoThumbnails.length > 0) ? videoObj.videoThumbnails[0].url : (videoObj.thumbnail || "");
+             currentVideoThumbnail = resolveThumbnail(rawThumb);
+             if (!titleOverride) title = videoObj.title;
+        } else {
+             // Fallback: Check playlist videos if available
+             const plVideo = currentPlaylistVideos.find(v => v.id === id);
+             if (plVideo) {
+                 currentVideoThumbnail = resolveThumbnail(plVideo.thumbnail);
+                 if (!titleOverride) title = plVideo.title;
+             }
         }
+        
+        currentVideoTitle = title;
 
         trackEvent('/api/track/videoClick', { 
             searchId: currentSearchId,
@@ -1604,7 +1652,7 @@
             youtubePlayer = null;
         }
 
-        iframe.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&modestbranding=1`;
+        initYouTubePlayer(id);
     }
 
     function closeVideo() {
@@ -1622,6 +1670,9 @@
         currentPlaylistId = null;
         currentPlaylistVideos = [];
         currentPlaylistIndex = 0;
+        
+        // Clear continue watching state as user manually closed the video
+        localStorage.removeItem('wetube-continue-watching');
     }
 
     function openVideoInNewTab() {
@@ -1733,146 +1784,8 @@
     }
 
     async function loadChannelVideos(page = 1) {
-        if (!canMakeRequest()) await new Promise(r => setTimeout(r, COOLDOWN_MS));
-        lastRequestTime = Date.now();
-
-        currentMode = "channel";
-        lastSearchQuery = "";
-        currentPage = page;
-        
-        currentChannelName = "Hicksville Video Productions";
-        currentChannelId = "UCNH7ejvJvMRcHAwKpyV_ijw"; // Hardcoded for this specific button
-
-        const ld = document.getElementById("loadingDiv");
-        const ws = document.getElementById("welcomeScreen");
-        const grid = document.getElementById("videoGrid");
-        const loadMoreBtn = document.getElementById("loadMoreBtn");
-
-        if (page === 1) {
-            ld.style.display = "block";
-            ws.style.display = "none";
-            grid.innerHTML = "";
-            videos = [];
-        }
-
-        try {
-            // We want to present 20 videos per user-visible page.
-            const TARGET_PER_PAGE = 20;
-            let fetchPage = page;
-            let collected = [];
-            const seen = new Set();
-
-            // Helper: fetch one backend page using a few fallbacks (keeps previous logic localized)
-            async function fetchOneBackendPage(p) {
-                try {
-                    // Try channel-specific endpoint first (often returns multiple videos per page)
-                    try {
-                        const channelVideosUrl = `${API_BASE}/channels/${currentChannelId}/videos?page=${p}`;
-                        const channelVideos = await fetchData(channelVideosUrl).catch(() => null) || [];
-                        if (channelVideos && channelVideos.length) {
-                            console.debug('fetchOneBackendPage: channel endpoint', channelVideosUrl, 'count', channelVideos.length);
-                            return channelVideos.map(item => ({
-                                videoId: item.videoId || item.id || item.video_id,
-                                title: item.title,
-                                videoThumbnails: item.videoThumbnails || item.thumbnails || [],
-                                author: currentChannelName,
-                                authorId: currentChannelId,
-                                viewCount: item.viewCount,
-                                published: item.published,
-                                lengthSeconds: item.lengthSeconds
-                            }));
-                        }
-                    } catch (e) { /* ignore */ }
-
-                    const searchUrl = `${API_BASE}/search?q=${encodeURIComponent('"Hicksville Video Productions"')}&type=video&page=${p}&sort=date`;
-                    const searchData = await fetchData(searchUrl).catch(() => null) || [];
-                    console.debug('fetchOneBackendPage: search', searchUrl, 'count', (searchData || []).length);
-
-                    // Prefer items from the known channel id
-                    let pageItems = (searchData || []).filter(v => v.authorId === currentChannelId);
-
-                    // If none, try handle fallback
-                    if (!pageItems.length) {
-                        const fallbackUrl = `${API_BASE}/search?q=${encodeURIComponent(HICKSVILLE_HANDLE)}&type=video&page=${p}`;
-                        const fallbackData = await fetchData(fallbackUrl).catch(() => null) || [];
-                        console.debug('fetchOneBackendPage: handle fallback', fallbackUrl, 'count', (fallbackData || []).length);
-                        if (fallbackData && fallbackData.length) pageItems = fallbackData;
-                    }
-
-                    return pageItems;
-                } catch (e) {
-                    console.debug('fetchOneBackendPage error', e);
-                    return [];
-                }
-            }
-
-            const MAX_BACKEND_PAGES = 10;
-            let backendPagesTried = 0;
-            while (collected.length < TARGET_PER_PAGE && backendPagesTried < MAX_BACKEND_PAGES) {
-                const pageItems = await fetchOneBackendPage(fetchPage);
-                if (!pageItems || pageItems.length === 0) break;
-
-                for (const it of pageItems) {
-                    const id = it.videoId || it.id || it.video_id || (it.videoThumbnails && it.videoThumbnails[0] && it.videoThumbnails[0].url) || null;
-                    const vid = it.videoId || it.id || it.videoId || id;
-                    if (!vid) continue;
-                    if (seen.has(vid)) continue;
-                    seen.add(vid);
-                    collected.push({
-                        id: vid,
-                        videoId: vid,
-                        title: it.title || it.videoTitle || '' ,
-                        thumbnail: (it.videoThumbnails && it.videoThumbnails[0] && it.videoThumbnails[0].url) || it.thumbnail || '',
-                        author: it.author || currentChannelName,
-                        authorId: it.authorId || currentChannelId,
-                        viewCount: it.viewCount,
-                        published: it.published,
-                        lengthSeconds: it.lengthSeconds
-                    });
-                    if (collected.length >= TARGET_PER_PAGE) break;
-                }
-
-                // If backend returned fewer than expected, try next backend page
-                fetchPage++;
-                backendPagesTried++;
-            }
-
-            if (page === 1) {
-                const trackRes = await trackEvent('/api/track/search', { query: `Channel: ${currentChannelName}` });
-                if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
-            }
-
-            // If nothing collected on first page, show message
-            if (collected.length === 0 && page === 1) {
-                grid.innerHTML = "<p>No videos found.</p>";
-                loadMoreBtn.style.display = "none";
-                ld.style.display = "none";
-                return;
-            }
-
-            // Append collected videos (up to TARGET_PER_PAGE)
-            videos = videos.concat(collected.slice(0, TARGET_PER_PAGE));
-            videos = clientSideSort(videos, currentSort);
-
-            displayVideos();
-
-            // Update currentPage to the last backend page we consumed
-            currentPage = Math.max(1, fetchPage - 1);
-
-            // Show load more if we fetched at least one backend page (there may be more)
-            if (collected.length >= TARGET_PER_PAGE || fetchPage > page) {
-                loadMoreBtn.style.display = "inline-block";
-                loadMoreBtn.disabled = false;
-            } else {
-                loadMoreBtn.style.display = "none";
-            }
-        } catch (err) {
-            console.error(err);
-            if (page === 1) grid.innerHTML = `<p>Error loading videos: ${err.message}</p>`;
-            loadMoreBtn.style.display = "none";
-        } finally {
-            if (page === 1) ld.style.display = "none";
-        }
+        // Hardcoded for Hicksville Video Productions
+        await loadChannelVideosById("UCNH7ejvJvMRcHAwKpyV_ijw", "Hicksville Video Productions", page);
     }
 
     async function loadChannelVideosById(channelId, channelName, page = 1) {
@@ -1899,131 +1812,68 @@
         }
 
         try {
-            // Aim: always load ~20 videos per visible "page" and let Load More fetch the next ~20.
-            const TARGET_PER_PAGE = 20;
-            let fetchPage = page;
-            let collected = [];
-            const seen = new Set();
-
-            // Helper: try various backend searches for one backend page and return raw items
-            async function fetchBackendPage(p) {
-                try {
-                    // Try channel-specific endpoint first
-                    try {
-                        const channelVideosUrl = `${API_BASE}/channels/${channelId}/videos?page=${p}`;
-                        const channelVideos = await fetchData(channelVideosUrl).catch(() => null) || [];
-                        if (channelVideos && channelVideos.length) {
-                            console.debug('fetchBackendPage: channel endpoint', channelVideosUrl, 'count', channelVideos.length);
-                            return channelVideos.map(item => ({
-                                videoId: item.videoId || item.id || item.video_id,
-                                title: item.title,
-                                videoThumbnails: item.videoThumbnails || item.thumbnails || [],
-                                author: channelName,
-                                authorId: channelId,
-                                viewCount: item.viewCount,
-                                published: item.published,
-                                lengthSeconds: item.lengthSeconds
-                            }));
-                        }
-                    } catch (e) { /* ignore */ }
-
-                    const query = `"${channelName}"`;
-                    const searchUrl = `${API_BASE}/search?q=${encodeURIComponent(query)}&type=video&page=${p}&sort=date`;
-                    const newVideos = await fetchData(searchUrl).catch(() => null) || [];
-                    console.debug('fetchBackendPage: search', searchUrl, 'count', (newVideos || []).length);
-
-                    // Try relaxed matching first
-                    let filtered = (newVideos || []).filter(v => {
-                        try {
-                            if (!v) return false;
-                            if (v.authorId && v.authorId === channelId) return true;
-                            if (v.author && v.author === channelName) return true;
-                            return false;
-                        } catch (e) { return false; }
-                    });
-
-                    // If still empty, try channelId param search
-                    if ((!filtered || filtered.length === 0)) {
-                        try {
-                            const byIdUrl = `${API_BASE}/search?channelId=${encodeURIComponent(channelId)}&type=video&page=${p}&sort=date`;
-                            const byIdResults = await fetchData(byIdUrl).catch(() => null) || [];
-                            console.debug('fetchBackendPage: byId', byIdUrl, 'count', (byIdResults || []).length);
-                            if (byIdResults && byIdResults.length) filtered = byIdResults;
-                        } catch (e) { /* ignore */ }
-                    }
-
-                    // If still empty, try raw id in query
-                    if ((!filtered || filtered.length === 0)) {
-                        try {
-                            const idQueryUrl = `${API_BASE}/search?q=${encodeURIComponent(channelId)}&type=video&page=${p}&sort=date`;
-                            const idQueryResults = await fetchData(idQueryUrl).catch(() => null) || [];
-                            console.debug('fetchBackendPage: idQuery', idQueryUrl, 'count', (idQueryResults || []).length);
-                            if (idQueryResults.length) filtered = idQueryResults;
-                        } catch (e) { /* ignore */ }
-                    }
-
-                    // Final fallback: accept raw newVideos if nothing else matched
-                    if ((!filtered || filtered.length === 0) && newVideos.length > 0) filtered = newVideos;
-
-                    return filtered || [];
-                } catch (e) { console.debug('fetchBackendPage error', e); return []; }
-            }
-
-            const MAX_BACKEND_PAGES = 10;
-            let backendPagesTried = 0;
-            while (collected.length < TARGET_PER_PAGE && backendPagesTried < MAX_BACKEND_PAGES) {
-                const pageItems = await fetchBackendPage(fetchPage);
-                if (!pageItems || pageItems.length === 0) break;
-
-                for (const it of pageItems) {
-                    const vid = it.videoId || it.id || it.videoId || (it.videoThumbnails && it.videoThumbnails[0] && it.videoThumbnails[0].url) || null;
-                    if (!vid) continue;
-                    if (seen.has(vid)) continue;
-                    seen.add(vid);
-                    collected.push({
-                        id: vid,
-                        videoId: vid,
-                        title: it.title || '',
-                        thumbnail: (it.videoThumbnails && it.videoThumbnails[0] && it.videoThumbnails[0].url) || it.thumbnail || '',
-                        author: it.author || channelName,
-                        authorId: it.authorId || channelId,
-                        viewCount: it.viewCount,
-                        published: it.published,
-                        lengthSeconds: it.lengthSeconds
-                    });
-                    if (collected.length >= TARGET_PER_PAGE) break;
+            // Direct Invidious API call to get recent videos (sorted by new)
+            const channelVideosUrl = `${API_BASE}/channels/${channelId}/videos?page=${page}&sort_by=newest`;
+            
+            let newVideos = [];
+            try {
+                const results = await fetchData(channelVideosUrl);
+                if (Array.isArray(results)) {
+                    newVideos = results;
+                } else if (results && results.videos) {
+                    newVideos = results.videos;
                 }
-                fetchPage++;
-                backendPagesTried++;
+            } catch (e) {
+                console.warn("Channel fetch failed", e);
+                if (page === 1) {
+                     grid.innerHTML = `<p>Error loading videos from channel: ${e.message}</p>`;
+                     loadMoreBtn.style.display = "none";
+                     ld.style.display = "none";
+                     return;
+                }
             }
+
+            const mappedVideos = newVideos.map(item => ({
+                id: item.videoId,
+                videoId: item.videoId,
+                title: item.title,
+                thumbnail: (item.videoThumbnails && item.videoThumbnails[0] && item.videoThumbnails[0].url) || item.thumbnail || "",
+                author: item.author || channelName,
+                authorId: item.authorId || channelId,
+                viewCount: item.viewCount,
+                published: item.published,
+                lengthSeconds: item.lengthSeconds
+            }));
 
             if (page === 1) {
                 const trackRes = await trackEvent('/api/track/search', { query: `Channel: ${currentChannelName}` });
                 if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
             }
 
-            if (collected.length === 0 && page === 1) {
-                grid.innerHTML = "<p>No videos found for this channel via search.</p>";
+            if (mappedVideos.length === 0 && page === 1) {
+                grid.innerHTML = "<p>No videos found for this channel.</p>";
                 loadMoreBtn.style.display = "none";
                 ld.style.display = "none";
                 return;
             }
 
-            videos = videos.concat(collected.slice(0, TARGET_PER_PAGE));
-            videos = clientSideSort(videos, currentSort);
+            videos = videos.concat(mappedVideos);
+            
+            if (currentSort !== 'relevance') {
+                 videos = clientSideSort(videos, currentSort);
+            }
 
             displayVideos();
 
-            // Update currentPage to last backend page consumed
-            currentPage = Math.max(1, fetchPage - 1);
-
-            if (collected.length >= TARGET_PER_PAGE || fetchPage > page) {
+            if (mappedVideos.length > 0) {
                 loadMoreBtn.style.display = "inline-block";
                 loadMoreBtn.disabled = false;
             } else {
                 loadMoreBtn.style.display = "none";
             }
+
         } catch (err) {
+            console.error(err);
             if (page === 1) grid.innerHTML = `<p>Error loading channel videos: ${err.message}</p>`;
             loadMoreBtn.style.display = "none";
         } finally {
@@ -2053,7 +1903,137 @@
         currentSearchType = 'video';
     }
 
-    const CURRENT_APP_VERSION = "1.5";
+    function saveWatchState() {
+        if (currentVideoId && document.getElementById("videoModal").style.display !== "none") {
+            let time = 0;
+            if (youtubePlayer && typeof youtubePlayer.getCurrentTime === 'function') {
+                try {
+                    time = youtubePlayer.getCurrentTime();
+                } catch(e) {}
+            }
+            
+            const state = {
+                videoId: currentVideoId,
+                title: currentVideoTitle || "Unknown Video",
+                thumbnail: currentVideoThumbnail || "",
+                time: time,
+                playlistId: currentPlaylistId,
+                playlistIndex: currentPlaylistIndex,
+                playlistVideos: currentPlaylistVideos
+            };
+            
+            localStorage.setItem('wetube-continue-watching', JSON.stringify(state));
+        }
+    }
+
+    window.addEventListener('beforeunload', saveWatchState);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') saveWatchState();
+    });
+    setInterval(saveWatchState, 5000);
+
+    function checkWatchState() {
+        const raw = localStorage.getItem('wetube-continue-watching');
+        if (!raw) return;
+        
+        try {
+            const state = JSON.parse(raw);
+            if (!state.videoId) {
+                localStorage.removeItem('wetube-continue-watching');
+                return;
+            }
+
+            document.getElementById('continueTitle').textContent = state.title || "Unknown Video";
+            
+            const thumbImg = document.getElementById('continueThumb');
+            thumbImg.src = state.thumbnail || `https://i.ytimg.com/vi/${state.videoId}/hqdefault.jpg`;
+            thumbImg.onerror = function() { this.src = "https://via.placeholder.com/160x90?text=No+Thumbnail"; };
+            
+            document.getElementById('continueWatchingModal').style.display = 'flex';
+        } catch (e) {
+            console.error("Error parsing continue watching state", e);
+            localStorage.removeItem('wetube-continue-watching');
+        }
+    }
+
+    function clearWatchState() {
+        localStorage.removeItem('wetube-continue-watching');
+        document.getElementById('continueWatchingModal').style.display = 'none';
+    }
+
+    function resumeVideo() {
+        const raw = localStorage.getItem('wetube-continue-watching');
+        if (!raw) return;
+        
+        let state;
+        try {
+            state = JSON.parse(raw);
+        } catch(e) {
+            clearWatchState();
+            return;
+        }
+        
+        clearWatchState();
+        
+        if (state.playlistId) {
+             currentPlaylistId = state.playlistId;
+             currentPlaylistVideos = state.playlistVideos || [];
+             
+             const modal = document.getElementById("videoModal");
+             const sidebar = document.getElementById("playlistSidebar");
+             const playlistVideosDiv = document.getElementById("playlistVideos");
+     
+             modal.style.display = "flex";
+             sidebar.style.display = "block";
+             
+             currentVideoId = state.videoId;
+             currentPlaylistIndex = state.playlistIndex;
+             currentVideoTitle = state.title;
+             currentVideoThumbnail = state.thumbnail;
+     
+             renderPlaylistSidebar();
+             initYouTubePlayer(state.videoId, state.time);
+             
+             updateAutoplayButton();
+             
+             trackEvent('/api/track/videoClick', { 
+                 searchId: currentSearchId,
+                 videoId: state.videoId,
+                 title: state.title 
+             });
+             
+        } else {
+             // We need to manually set globals that openVideo usually sets but we want custom time
+             currentVideoTitle = state.title;
+             currentVideoThumbnail = state.thumbnail;
+             
+             trackEvent('/api/track/videoClick', { 
+                searchId: currentSearchId,
+                videoId: state.videoId,
+                title: state.title 
+             });
+    
+             const modal = document.getElementById("videoModal");
+             const iframe = document.getElementById("videoIframe");
+             const sidebar = document.getElementById("playlistSidebar");
+            
+             modal.style.display = "flex";
+             currentVideoId = state.videoId;
+             sidebar.style.display = "none";
+             currentPlaylistId = null;
+             currentPlaylistVideos = [];
+             currentPlaylistIndex = 0;
+    
+             if (youtubePlayer) {
+                 try { youtubePlayer.destroy(); } catch (e) {}
+                 youtubePlayer = null;
+             }
+    
+             initYouTubePlayer(state.videoId, state.time);
+        }
+    }
+
+    const CURRENT_APP_VERSION = "1.5.1";
 
     function checkAppVersion() {
         try {
@@ -2097,6 +2077,7 @@
         loadAutoplaySetting();
         initFilters();
         checkAppVersion();
+        checkWatchState();
     });
 </script>
 
