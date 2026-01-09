@@ -6,6 +6,14 @@
 
 
 
+<!-- PLEASE USE THE HOSTED WEBSITES INSTEAD OF DOWNLOADING THIS, IF YOU USE THE DOWNLOADED VERSION THE YOUTUBE VIDEOS MOST LIKELY WON'T WORK !!-->
+<!-- PLEASE USE THE HOSTED WEBSITES INSTEAD OF DOWNLOADING THIS, IF YOU USE THE DOWNLOADED VERSION THE YOUTUBE VIDEOS MOST LIKELY WON'T WORK !!-->
+<!-- PLEASE USE THE HOSTED WEBSITES INSTEAD OF DOWNLOADING THIS, IF YOU USE THE DOWNLOADED VERSION THE YOUTUBE VIDEOS MOST LIKELY WON'T WORK !!-->
+<!-- PLEASE USE THE HOSTED WEBSITES INSTEAD OF DOWNLOADING THIS, IF YOU USE THE DOWNLOADED VERSION THE YOUTUBE VIDEOS MOST LIKELY WON'T WORK !!-->
+<!-- PLEASE USE THE HOSTED WEBSITES INSTEAD OF DOWNLOADING THIS, IF YOU USE THE DOWNLOADED VERSION THE YOUTUBE VIDEOS MOST LIKELY WON'T WORK !!-->
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,6 +21,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>WeTube - Search & Watch</title>
     <meta name="description" content="Search and watch YouTube videos with WeTube - A clean, modern YouTube interface powered by Invidious"/>
+    <link rel="preconnect" href="https://www.youtube-nocookie.com">
+    <link rel="preconnect" href="https://www.google.com">
     <script src="https://www.youtube.com/iframe_api"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -738,10 +748,10 @@
     <div id="updatePopup" class="update-modal" style="display: none;">
         <div class="update-modal-content">
             <div class="update-icon">🚀</div>
-            <h2 class="update-title">Welcome to WeTube v1.5.2!</h2>
+            <h2 class="update-title">Welcome to WeTube v1.5.3!</h2>
             <p class="update-text">
-                I fixed the channel search so it actually works again 🙏 And a "resume watching" popup has been added. 
-                If anything has stopped working because of this change, please let Zane know and he'll try to fix it :) Happy watching!
+                Hopefully a few bugs fixed, my fault for not maintaining it over Christmas lol. 
+                If anything has stopped working because of this change, please let Zane know and he'll try to fix it :] Happy watching!
             </p>
             <div class="update-actions">
                 <button class="update-btn" onclick="closeUpdatePopup()">Let's Go!</button>
@@ -974,19 +984,38 @@
     }
 
     function initYouTubePlayer(videoId, startTime = 0) {
-        const iframe = document.getElementById("videoIframe");
-        if (!iframe) return;
+        // 1. Destroy existing iframe and recreate it to force a fresh connection
+        const container = document.querySelector('.video-player');
+        const oldIframe = document.getElementById("videoIframe");
+        
+        if (oldIframe) {
+            oldIframe.remove();
+        }
 
-        let src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`;
+        const newIframe = document.createElement('iframe');
+        newIframe.id = "videoIframe";
+        newIframe.className = "video-iframe";
+        newIframe.allowFullscreen = true;
+        newIframe.referrerPolicy = "origin";
+        newIframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+        // Re-append to container
+        container.insertBefore(newIframe, container.firstChild);
+
+        // 2. Add Cache Buster & Origin
+        const cacheBuster = Math.floor(Math.random() * 1000000);
+        const origin = window.location.origin;
+        
+        let src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1&origin=${origin}&_=${cacheBuster}`;
         if (startTime > 0) src += `&start=${Math.floor(startTime)}`;
-        iframe.src = src;
+        
+        newIframe.src = src;
 
         // Always initialize the API player to enable time tracking (getCurrentTime)
         if (window.YT && window.YT.Player) {
             setTimeout(() => {
                 try {
                     if (youtubePlayer) {
-                        try { youtubePlayer.destroy(); } catch (e) {}
+                        // try { youtubePlayer.destroy(); } catch (e) {} // Iframe already replaced
                         youtubePlayer = null;
                     }
                     youtubePlayer = new YT.Player('videoIframe', {
@@ -996,6 +1025,7 @@
                             rel: 0,
                             modestbranding: 1,
                             enablejsapi: 1,
+                            origin: origin,
                             start: Math.floor(startTime)
                         },
                         events: {
@@ -2033,7 +2063,7 @@
         }
     }
 
-    const CURRENT_APP_VERSION = "1.5.2";
+    const CURRENT_APP_VERSION = "1.5.3";
 
     function checkAppVersion() {
         try {
