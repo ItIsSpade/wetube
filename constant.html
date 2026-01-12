@@ -1079,7 +1079,7 @@
         let src = "";
         if (currentPlayerType === 'old') {
              // Old (Original YouTube)
-             src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+             src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`;
              if (startTime > 0) src += `&start=${Math.floor(startTime)}`;
         } else {
              // Fixed (Invidious) - Default
@@ -1761,7 +1761,7 @@
         
         let url = "";
         if (currentPlayerType === 'old') {
-            url = `https://www.youtube.com/embed/${currentVideoId}?autoplay=1`;
+            url = `https://www.youtube-nocookie.com/embed/${currentVideoId}?autoplay=1`;
         } else {
             url = `https://africanlanguage.academy/embed/${currentVideoId}?autoplay=1`;
         }
