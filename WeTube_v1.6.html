@@ -6,14 +6,6 @@
 
 
 
-<!-- PLEASE USE THE HOSTED WEBSITES INSTEAD OF DOWNLOADING THIS, IF YOU USE THE DOWNLOADED VERSION THE YOUTUBE VIDEOS MOST LIKELY WON'T WORK !!-->
-<!-- PLEASE USE THE HOSTED WEBSITES INSTEAD OF DOWNLOADING THIS, IF YOU USE THE DOWNLOADED VERSION THE YOUTUBE VIDEOS MOST LIKELY WON'T WORK !!-->
-<!-- PLEASE USE THE HOSTED WEBSITES INSTEAD OF DOWNLOADING THIS, IF YOU USE THE DOWNLOADED VERSION THE YOUTUBE VIDEOS MOST LIKELY WON'T WORK !!-->
-<!-- PLEASE USE THE HOSTED WEBSITES INSTEAD OF DOWNLOADING THIS, IF YOU USE THE DOWNLOADED VERSION THE YOUTUBE VIDEOS MOST LIKELY WON'T WORK !!-->
-<!-- PLEASE USE THE HOSTED WEBSITES INSTEAD OF DOWNLOADING THIS, IF YOU USE THE DOWNLOADED VERSION THE YOUTUBE VIDEOS MOST LIKELY WON'T WORK !!-->
-
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,7 +15,7 @@
     <meta name="description" content="Search and watch YouTube videos with WeTube - A clean, modern YouTube interface powered by Invidious"/>
     <link rel="preconnect" href="https://www.youtube-nocookie.com">
     <link rel="preconnect" href="https://www.google.com">
-    <script src="https://www.youtube.com/iframe_api"></script>
+    <!-- YouTube API Removed -->
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -747,11 +739,11 @@
 <body class="dark-mode">
     <div id="updatePopup" class="update-modal" style="display: none;">
         <div class="update-modal-content">
-            <div class="update-icon">🚀</div>
-            <h2 class="update-title">Welcome to WeTube v1.5.3!</h2>
+            <div class="update-icon">🗿</div>
+            <h2 class="update-title">Welcome to WeTube v1.6!</h2>
             <p class="update-text">
-                Hopefully a few bugs fixed, my fault for not maintaining it over Christmas lol. 
-                If anything has stopped working because of this change, please let Zane know and he'll try to fix it :] Happy watching!
+                Changed the entire video player so the videos should load every single time without error. 
+                If anything has stopped working because of this change, please let Zane know and he'll try to fix it :) Happy watching!
             </p>
             <div class="update-actions">
                 <button class="update-btn" onclick="closeUpdatePopup()">Let's Go!</button>
@@ -761,7 +753,7 @@
 
     <header class="header">
         <div class="header-content">
-            <div class="logo-section" onclick="window.location.reload()">
+            <div class="logo-section" onclick="goHome()">
                 <div class="logo-icon">▶</div>
                 <h1 class="logo-text">WeTube</h1>
             </div>
@@ -863,6 +855,14 @@
             <div class="welcome-icon">🔍</div>
             <h2 class="welcome-title">Welcome to WeTube</h2>
             <p class="welcome-subtitle">Search for videos, playlists, or channels to get started</p>
+            
+            <div class="player-toggle-container" style="margin-top: 2rem; display: flex; align-items: center; justify-content: center; gap: 1rem;">
+                <span style="font-weight: 600; color: var(--text-muted);">Player:</span>
+                <div style="display: flex; background: rgba(0,0,0,0.05); border-radius: 20px; padding: 4px;">
+                    <button id="playerToggleFixed" onclick="setPlayerType('fixed')" style="border: none; background: var(--sky-blue); color: white; padding: 6px 16px; border-radius: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Fixed</button>
+                    <button id="playerToggleOld" onclick="setPlayerType('old')" style="border: none; background: transparent; color: var(--text-muted); padding: 6px 16px; border-radius: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Old</button>
+                </div>
+            </div>
         </div>
         <div id="videoGrid" class="video-grid"></div>
         <div style="text-align:center;margin-top:2rem;">
@@ -871,11 +871,43 @@
     </main>
 
     <script>
-    const API_BASE = "https://zanecloud.ddns.net/api/v1";
+    const API_BASE = "https://africanlanguage.academy/api/v1";
     const HICKSVILLE_HANDLE = "@hicksvillevideoproductions1304";
 
+    function goHome() {
+        // Clear Search
+        const searchInput = document.getElementById("searchInput");
+        if (searchInput) searchInput.value = "";
+        
+        // Reset Modes
+        currentMode = "";
+        lastSearchQuery = "";
+        currentPage = 1;
+        
+        // Hide Grids & Loaders
+        document.getElementById("videoGrid").innerHTML = "";
+        document.getElementById("loadingDiv").style.display = "none";
+        document.getElementById("loadMoreBtn").style.display = "none";
+        
+        // Show Welcome Screen
+        document.getElementById("welcomeScreen").style.display = "block";
+        
+        // Close any open video
+        closeVideo();
+        
+        // Clear any playlist data
+        currentPlaylistId = null;
+        currentPlaylistVideos = [];
+        
+        // Reset URL (optional, makes it feel like home)
+        if (window.history && window.history.pushState) {
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.history.pushState({path:newUrl},'',newUrl);
+        }
+    }
+
     // --- TRACKING LOGIC ---
-    const TRACKING_API_BASE = "https://zanecloud.ddns.net/tracker";
+    const TRACKING_API_BASE = "https://africanlanguage.academy/tracker";
     // Generate unique session ID for tab tracking
     const SESSION_ID = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
     
@@ -929,6 +961,7 @@
     let currentPlaylistVideos = [];
     let currentPlaylistIndex = 0;
     let playlistAutoplayEnabled = false;
+    let currentPlayerType = 'fixed';
     let youtubePlayer = null;
     let youtubePlayerReady = false;
 
@@ -955,6 +988,47 @@
             updateAutoplayButton();
         } catch (e) {
             playlistAutoplayEnabled = false;
+        }
+        loadPlayerSetting();
+    }
+
+    function loadPlayerSetting() {
+        try {
+            const saved = localStorage.getItem('wetube-player-type');
+            if (saved === 'old') {
+                setPlayerType('old', false);
+            } else {
+                setPlayerType('fixed', false);
+            }
+        } catch (e) {
+            setPlayerType('fixed', false);
+        }
+    }
+
+    function setPlayerType(type, save = true) {
+        currentPlayerType = type;
+        
+        const btnFixed = document.getElementById('playerToggleFixed');
+        const btnOld = document.getElementById('playerToggleOld');
+        
+        if (btnFixed && btnOld) {
+            if (type === 'fixed') {
+                btnFixed.style.background = 'var(--sky-blue)';
+                btnFixed.style.color = 'white';
+                btnOld.style.background = 'transparent';
+                btnOld.style.color = 'var(--text-muted)';
+            } else {
+                btnOld.style.background = 'var(--sky-blue)';
+                btnOld.style.color = 'white';
+                btnFixed.style.background = 'transparent';
+                btnFixed.style.color = 'var(--text-muted)';
+            }
+        }
+
+        if (save) {
+            try {
+                localStorage.setItem('wetube-player-type', type);
+            } catch (e) {}
         }
     }
 
@@ -996,61 +1070,38 @@
         newIframe.id = "videoIframe";
         newIframe.className = "video-iframe";
         newIframe.allowFullscreen = true;
-        newIframe.referrerPolicy = "origin";
+        newIframe.referrerPolicy = "no-referrer-when-downgrade";
         newIframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
         // Re-append to container
         container.insertBefore(newIframe, container.firstChild);
 
-        // 2. Add Cache Buster & Origin
-        const cacheBuster = Math.floor(Math.random() * 1000000);
-        const origin = window.location.origin;
-        
-        let src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1&origin=${origin}&_=${cacheBuster}`;
-        if (startTime > 0) src += `&start=${Math.floor(startTime)}`;
+        // Embed Logic based on Player Type
+        let src = "";
+        if (currentPlayerType === 'old') {
+             // Old (Original YouTube)
+             src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+             if (startTime > 0) src += `&start=${Math.floor(startTime)}`;
+        } else {
+             // Fixed (Invidious) - Default
+             src = `https://africanlanguage.academy/embed/${videoId}?autoplay=1`;
+             if (startTime > 0) src += `&t=${Math.floor(startTime)}`;
+        }
         
         newIframe.src = src;
+    }
 
-        // Always initialize the API player to enable time tracking (getCurrentTime)
-        if (window.YT && window.YT.Player) {
-            setTimeout(() => {
-                try {
-                    if (youtubePlayer) {
-                        // try { youtubePlayer.destroy(); } catch (e) {} // Iframe already replaced
-                        youtubePlayer = null;
-                    }
-                    youtubePlayer = new YT.Player('videoIframe', {
-                        videoId: videoId,
-                        playerVars: {
-                            autoplay: 1,
-                            rel: 0,
-                            modestbranding: 1,
-                            enablejsapi: 1,
-                            origin: origin,
-                            start: Math.floor(startTime)
-                        },
-                        events: {
-                            'onReady': onPlayerReady,
-                            'onStateChange': onPlayerStateChange
-                        }
-                    });
-                } catch (e) {
-                    console.error('YouTube API error:', e);
-                    youtubePlayer = null;
+    window.addEventListener('message', function(e) {
+        try {
+            // Attempt to parse Invidious/YouTube formatted messages
+            const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+            // Check for 'ended' event
+            if (data && (data.event === 'ended' || data.info === 'ended')) {
+                if (playlistAutoplayEnabled && currentPlaylistVideos.length > 0) {
+                    playNextVideoInPlaylist();
                 }
-            }, 500);
-        }
-    }
-
-    function onPlayerReady(event) {
-    }
-
-    function onPlayerStateChange(event) {
-        if (event.data === YT.PlayerState.ENDED) {
-            if (playlistAutoplayEnabled && currentPlaylistVideos.length > 0) {
-                playNextVideoInPlaylist();
             }
-        }
-    }
+        } catch(err) {}
+    });
 
     function playNextVideoInPlaylist() {
         if (!currentPlaylistVideos || currentPlaylistVideos.length === 0) return;
@@ -1134,7 +1185,7 @@
         function resolveThumbnail(url) {
             if (!url) return "https://via.placeholder.com/320x180?text=No+Thumbnail";
             if (url.startsWith('//')) return 'https:' + url;
-            if (url.startsWith('/')) return 'https://zanecloud.ddns.net' + url;
+            if (url.startsWith('/')) return 'https://africanlanguage.academy' + url;
             return url;
         }
     
@@ -1707,7 +1758,14 @@
 
     function openVideoInNewTab() {
         if (!currentVideoId) return;
-        const url = `https://www.youtube-nocookie.com/embed/${currentVideoId}?autoplay=1&rel=0&modestbranding=1`;
+        
+        let url = "";
+        if (currentPlayerType === 'old') {
+            url = `https://www.youtube.com/embed/${currentVideoId}?autoplay=1`;
+        } else {
+            url = `https://africanlanguage.academy/embed/${currentVideoId}?autoplay=1`;
+        }
+
         const newWindow = window.open('about:blank', '_blank');
         if (newWindow) {
             newWindow.document.write(`
@@ -1715,7 +1773,7 @@
                 <html>
                 <head><title>WeTube Video</title></head>
                 <body style="margin:0;padding:0;background:#000;">
-                <iframe src="${url}" style="width:100vw;height:100vh;border:none;" allowfullscreen></iframe>
+                <iframe src="${url}" style="width:100vw;height:100vh;border:none;" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
                 </body>
                 </html>
             `);
@@ -2063,7 +2121,7 @@
         }
     }
 
-    const CURRENT_APP_VERSION = "1.5.3";
+    const CURRENT_APP_VERSION = "1.6";
 
     function checkAppVersion() {
         try {
