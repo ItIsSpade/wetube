@@ -26,3 +26,4 @@ The reason this site can play videos like this is because it utilizes the [NEW:]
 1. If your browser doesn't show thumbnails or the videos don't load (AKA a white screen), try quitting and reopening the browser.
 2. I don't know of any other issues right now so as long as you use the website above, everything will be updated and most all video player issues will be fixed.
 3. If you are ever lost in the site or something is being finicky, just reload the page and go from there.
+4. Try switching from "Fixed" player to "Old" or vice versa! [Added in v1.6]
