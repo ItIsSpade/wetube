@@ -12,7 +12,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>WeTube - Search & Watch</title>
-    <meta name="description" content="Search and watch YouTube videos with WeTube/>
+    <meta name="description" content="Search and watch YouTube videos with WeTube"/>
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/ItIsSpade/wetube/refs/heads/main/icon.png">
     <link rel="preconnect" href="https://www.youtube-nocookie.com">
     <link rel="preconnect" href="https://www.google.com">
@@ -872,7 +872,7 @@
     </main>
 
     <script>
-    const API_BASE = "https://africanlanguage.academy/api/v1";
+    const API_BASE = "https://zanecloud.ddns.net/api/v1";
     const HICKSVILLE_HANDLE = "@hicksvillevideoproductions1304";
 
     function goHome() {
@@ -908,7 +908,7 @@
     }
 
     // --- TRACKING LOGIC ---
-    const TRACKING_API_BASE = "https://africanlanguage.academy/tracker";
+    const TRACKING_API_BASE = "https://zanecloud.ddns.net/tracker";
     // Generate unique session ID for tab tracking
     const SESSION_ID = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
     
@@ -1084,7 +1084,7 @@
              if (startTime > 0) src += `&start=${Math.floor(startTime)}`;
         } else {
              // Fixed (Invidious) - Default
-             src = `https://africanlanguage.academy/embed/${videoId}?autoplay=1`;
+             src = `https://zanecloud.ddns.net/embed/${videoId}?autoplay=1`;
              if (startTime > 0) src += `&t=${Math.floor(startTime)}`;
         }
         
@@ -1186,7 +1186,7 @@
         function resolveThumbnail(url) {
             if (!url) return "https://via.placeholder.com/320x180?text=No+Thumbnail";
             if (url.startsWith('//')) return 'https:' + url;
-            if (url.startsWith('/')) return 'https://africanlanguage.academy' + url;
+            if (url.startsWith('/')) return 'https://zanecloud.ddns.net' + url;
             return url;
         }
     
@@ -1321,30 +1321,29 @@
             }
         }
     
-        function displayPlaylists() {
-            const grid = document.getElementById("videoGrid");
-            grid.innerHTML = playlists.map(p => {
-                const title = p.title.replace(/"/g, "&quot;");
-                let rawThumb = p.playlistThumbnail || (p.videos && p.videos.length > 0 ? p.videos[0].videoThumbnails[0].url : "");
-                const thumb = resolveThumbnail(rawThumb);
-                
-                return `
-                    <div class="playlist-card" onclick="openPlaylist('${p.playlistId}')">
-                        <div class="playlist-thumbnail">
-                            <img src="${thumb}" alt="${title}" onerror="this.src='https://via.placeholder.com/300x200?text=No+Thumbnail'">
-                            <div class="play-overlay"></div>
-                            <div class="playlist-count">Playlist • ${p.videoCount} videos</div>
-                        </div>
-                        <div class="playlist-info">
-                            <h3 class="playlist-title">${title}</h3>
-                            <p class="playlist-meta">${p.author}</p>
-                        </div>
-                    </div>`;
-            }).join("");
-        }
-    
-        async function openPlaylist(playlistId, page = 1) {
-            if (!canMakeRequest()) await new Promise(r => setTimeout(r, COOLDOWN_MS));
+            function displayPlaylists() {
+                const grid = document.getElementById("videoGrid");
+                grid.innerHTML = playlists.map(p => {
+                    const title = (p.title || "Untitled Playlist").replace(/"/g, "&quot;");
+                    let rawThumb = p.playlistThumbnail || (p.videos && p.videos.length > 0 ? p.videos[0].videoThumbnails[0].url : "");
+                    const thumb = resolveThumbnail(rawThumb);
+                    
+                    return `
+                        <div class="playlist-card" onclick="openPlaylist('${p.playlistId}')">
+                            <div class="playlist-thumbnail">
+                                <img src="${thumb}" alt="${title}" onerror="this.src='https://via.placeholder.com/300x200?text=No+Thumbnail'">
+                                <div class="play-overlay"></div>
+                                <div class="playlist-count">Playlist • ${p.videoCount} videos</div>
+                            </div>
+                            <div class="playlist-info">
+                                <h3 class="playlist-title">${title}</h3>
+                                <p class="playlist-meta">${p.author}</p>
+                            </div>
+                        </div>`;
+                }).join("");
+            }
+        
+            async function openPlaylist(playlistId, page = 1) {            if (!canMakeRequest()) await new Promise(r => setTimeout(r, COOLDOWN_MS));
             lastRequestTime = Date.now();
     
             currentPlaylistId = playlistId;
@@ -1637,62 +1636,61 @@
             }
         }
     
-        function displayChannels() {
-            const grid = document.getElementById("videoGrid");
-            grid.innerHTML = channelResults.map(c => {
-                const title = c.author.replace(/"/g, "&quot;");
-                const safeTitle = title.replace(/'/g, "\\'"); 
-                const desc = (c.description || "").replace(/"/g, "&quot;");
-                let rawThumb = c.authorThumbnails ? c.authorThumbnails[c.authorThumbnails.length - 1].url : "";
-                const thumb = resolveThumbnail(rawThumb);
-                const channelId = c.authorId;
-                return `
-                    <div class="video-card" onclick="loadChannelVideosById('${channelId}', '${safeTitle}')">
-                        <div class="video-thumbnail">
-                            <img src="${thumb}" alt="${title}" style="object-fit: contain; padding: 10px; background: #000;" onerror="this.src='https://via.placeholder.com/300x200?text=No+Channel+Icon'">
-                            <div class="play-overlay">👤</div>
-                        </div>
-                        <div class="video-info">
-                            <h3 class="video-title">${title}</h3>
-                            <p class="video-channel">Subscribers: ${formatViewCount(c.subCount)}</p>
-                            <p class="video-channel">${desc.substring(0, 100)}${desc.length > 100 ? "..." : ""}</p>
-                        </div>
-                    </div>`;
-            }).join("");
-        }
-    
-            function displayVideos() {
+            function displayChannels() {
                 const grid = document.getElementById("videoGrid");
-                grid.innerHTML = videos.map(v => {
-                    const views = formatViewCount(v.viewCount);
-                    const dur = formatSeconds(v.lengthSeconds);
-                    const date = v.publishedText || formatTimestamp(v.published);
-                    const title = v.title.replace(/"/g, "&quot;");
-                    
-                    // Handle both API structure (videoThumbnails) and manual structure (thumbnail)
-                    let rawThumb = (v.videoThumbnails && v.videoThumbnails.length > 0) ? v.videoThumbnails[0].url : (v.thumbnail || "");
-                    
-                    // Use resolveThumbnail to ensure absolute URL
+                grid.innerHTML = channelResults.map(c => {
+                    const title = (c.author || "Unknown Channel").replace(/"/g, "&quot;");
+                    const safeTitle = title.replace(/'/g, "\\'"); 
+                    const desc = (c.description || "").replace(/"/g, "&quot;");
+                    let rawThumb = c.authorThumbnails ? c.authorThumbnails[c.authorThumbnails.length - 1].url : "";
                     const thumb = resolveThumbnail(rawThumb);
-                    
+                    const channelId = c.authorId;
                     return `
-                        <div class="video-card" onclick="openVideo('${v.videoId}')">
+                        <div class="video-card" onclick="loadChannelVideosById('${channelId}', '${safeTitle}')">
                             <div class="video-thumbnail">
-                                <img src="${thumb}" alt="${title}" onerror="getFallbackImage(this, '${v.videoId}')">
-                                <div class="play-overlay">▶</div>
-                                ${dur ? `<div class="video-duration">⏱ ${dur}</div>` : ""}
+                                <img src="${thumb}" alt="${title}" style="object-fit: contain; padding: 10px; background: #000;" onerror="this.src='https://via.placeholder.com/300x200?text=No+Channel+Icon'">
+                                <div class="play-overlay">👤</div>
                             </div>
                             <div class="video-info">
                                 <h3 class="video-title">${title}</h3>
-                                <p class="video-channel">${v.author}</p>
-                                <div class="video-meta">
-                                    <span>👁 ${views} views</span>
-                                    <span>${date}</span>
-                                </div>
+                                <p class="video-channel">Subscribers: ${formatViewCount(c.subCount)}</p>
+                                <p class="video-channel">${desc.substring(0, 100)}${desc.length > 100 ? "..." : ""}</p>
                             </div>
                         </div>`;
                 }).join("");
-            }    function openVideo(id, titleOverride = null) {
+            }    
+                    function displayVideos() {
+                        const grid = document.getElementById("videoGrid");
+                        grid.innerHTML = videos.map(v => {
+                            const views = formatViewCount(v.viewCount);
+                            const dur = formatSeconds(v.lengthSeconds);
+                            const date = v.publishedText || formatTimestamp(v.published);
+                            const title = (v.title || "Untitled Video").replace(/"/g, "&quot;");
+                            
+                            // Handle both API structure (videoThumbnails) and manual structure (thumbnail)
+                            let rawThumb = (v.videoThumbnails && v.videoThumbnails.length > 0) ? v.videoThumbnails[0].url : (v.thumbnail || "");
+                            
+                            // Use resolveThumbnail to ensure absolute URL
+                            const thumb = resolveThumbnail(rawThumb);
+                            
+                            return `
+                                <div class="video-card" onclick="openVideo('${v.videoId}')">
+                                    <div class="video-thumbnail">
+                                        <img src="${thumb}" alt="${title}" onerror="getFallbackImage(this, '${v.videoId}')">
+                                        <div class="play-overlay">▶</div>
+                                        ${dur ? `<div class="video-duration">⏱ ${dur}</div>` : ""}
+                                    </div>
+                                    <div class="video-info">
+                                        <h3 class="video-title">${title}</h3>
+                                        <p class="video-channel">${v.author}</p>
+                                        <div class="video-meta">
+                                            <span>👁 ${views} views</span>
+                                            <span>${date}</span>
+                                        </div>
+                                    </div>
+                                </div>`;
+                        }).join("");
+                    }    function openVideo(id, titleOverride = null) {
         let title = titleOverride || "Unknown Video";
         currentVideoThumbnail = "";
         
@@ -1764,7 +1762,7 @@
         if (currentPlayerType === 'old') {
             url = `https://www.youtube-nocookie.com/embed/${currentVideoId}?autoplay=1`;
         } else {
-            url = `https://africanlanguage.academy/embed/${currentVideoId}?autoplay=1`;
+            url = `https://zanecloud.ddns.net/embed/${currentVideoId}?autoplay=1`;
         }
 
         const newWindow = window.open('about:blank', '_blank');
