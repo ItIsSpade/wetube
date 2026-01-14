@@ -872,7 +872,7 @@
     </main>
 
     <script>
-    const API_BASE = "https://zanecloud.ddns.net/api/v1";
+    const API_BASE = "https://africanlanguage.academy/api/v1";
     const HICKSVILLE_HANDLE = "@hicksvillevideoproductions1304";
 
     function goHome() {
@@ -1084,7 +1084,7 @@
              if (startTime > 0) src += `&start=${Math.floor(startTime)}`;
         } else {
              // Fixed (Invidious) - Default
-             src = `https://zanecloud.ddns.net/embed/${videoId}?autoplay=1`;
+             src = `https://africanlanguage.academy/embed/${videoId}?autoplay=1`;
              if (startTime > 0) src += `&t=${Math.floor(startTime)}`;
         }
         
@@ -1186,7 +1186,7 @@
         function resolveThumbnail(url) {
             if (!url) return "https://via.placeholder.com/320x180?text=No+Thumbnail";
             if (url.startsWith('//')) return 'https:' + url;
-            if (url.startsWith('/')) return 'https://zanecloud.ddns.net' + url;
+            if (url.startsWith('/')) return 'https://africanlanguage.academy' + url;
             return url;
         }
     
@@ -1762,7 +1762,7 @@
         if (currentPlayerType === 'old') {
             url = `https://www.youtube-nocookie.com/embed/${currentVideoId}?autoplay=1`;
         } else {
-            url = `https://zanecloud.ddns.net/embed/${currentVideoId}?autoplay=1`;
+            url = `https://africanlanguage.academy/embed/${currentVideoId}?autoplay=1`;
         }
 
         const newWindow = window.open('about:blank', '_blank');
