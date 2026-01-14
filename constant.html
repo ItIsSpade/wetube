@@ -754,7 +754,7 @@
 
     <header class="header">
         <div class="header-content">
-            <div class="logo-section" onclick="goHome()">
+            <div class="logo-section" onclick="window.location.reload()">
                 <div class="logo-icon">▶</div>
                 <h1 class="logo-text">WeTube</h1>
             </div>
@@ -875,37 +875,7 @@
     const API_BASE = "https://africanlanguage.academy/api/v1";
     const HICKSVILLE_HANDLE = "@hicksvillevideoproductions1304";
 
-    function goHome() {
-        // Clear Search
-        const searchInput = document.getElementById("searchInput");
-        if (searchInput) searchInput.value = "";
-        
-        // Reset Modes
-        currentMode = "";
-        lastSearchQuery = "";
-        currentPage = 1;
-        
-        // Hide Grids & Loaders
-        document.getElementById("videoGrid").innerHTML = "";
-        document.getElementById("loadingDiv").style.display = "none";
-        document.getElementById("loadMoreBtn").style.display = "none";
-        
-        // Show Welcome Screen
-        document.getElementById("welcomeScreen").style.display = "block";
-        
-        // Close any open video
-        closeVideo();
-        
-        // Clear any playlist data
-        currentPlaylistId = null;
-        currentPlaylistVideos = [];
-        
-        // Reset URL (optional, makes it feel like home)
-        if (window.history && window.history.pushState) {
-            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-            window.history.pushState({path:newUrl},'',newUrl);
-        }
-    }
+
 
     // --- TRACKING LOGIC ---
     const TRACKING_API_BASE = "https://zanecloud.ddns.net/tracker";
