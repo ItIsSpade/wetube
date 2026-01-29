@@ -431,9 +431,9 @@
         .modal-content {
             background: white;
             border-radius: 12px;
-            width: 1040px; /* scaled up a bit more */
-            max-width: 96vw;
-            max-height: 85vh;
+            width: 1040px;
+            max-width: min(96vw, 120vh);
+            max-height: 90vh;
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -602,10 +602,76 @@
             outline: none;
         }
 
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 1024px) {
+            .header-actions .channel-btn span {
+                display: none;
+            }
+            .header-actions .channel-btn {
+                padding: 0.75rem;
+            }
+        }
+
+        .search-settings-popup {
+            display: none;
+            position: absolute;
+            top: 120%;
+            right: 0;
+            background: white;
+            border: 1px solid rgba(0,0,0,0.1);
+            padding: 1.25rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px -5px rgba(0, 0, 0, 0.15), 0 0 2px rgba(0,0,0,0.1);
+            z-index: 2000;
+            min-width: 240px;
+            flex-direction: column;
+            gap: 1rem;
+            transform-origin: top right;
+            animation: menuFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .settings-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .settings-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        body.dark-mode .search-settings-popup {
+            background: #1e293b;
+            border-color: #334155;
+            box-shadow: 0 10px 40px -5px rgba(0, 0, 0, 0.4);
+        }
+
+        @keyframes menuFadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
         @media (max-width: 768px) {
             .header-content { flex-direction: column; gap: 1rem; }
             .search-row { flex-direction: column; gap: 0.5rem; }
-            .search-container { max-width: 100%; }
+            .search-container { max-width: 100%; order: 2; }
+            .header-actions {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+                order: 3;
+            }
+            .logo-section { order: 1; }
             .video-grid {
                 grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
                 gap: 1rem;
@@ -740,11 +806,11 @@
 <body class="dark-mode">
     <div id="updatePopup" class="update-modal" style="display: none;">
         <div class="update-modal-content">
-            <div class="update-icon">🗿</div>
-            <h2 class="update-title">Welcome to WeTube v1.6!</h2>
+            <div class="update-icon">💪</div>
+            <h2 class="update-title">Welcome to WeTube v1.7!</h2>
             <p class="update-text">
-                Changed the entire video player so the videos should load every single time without error. 
-                If anything has stopped working because of this change, please let Zane know and he'll try to fix it :) Happy watching!
+                Added a feed since some people don't know what to watch lol, and fixed the layout to make it look and work better (Click the info button beside the 'Open Feed' to learn how to use it).
+                If anything has stopped working because of this change, please let Zane know and he'll try to fix it :] Happy watching!
             </p>
             <div class="update-actions">
                 <button class="update-btn" onclick="closeUpdatePopup()">Let's Go!</button>
@@ -754,19 +820,11 @@
 
     <header class="header">
         <div class="header-content">
-            <div class="logo-section" onclick="window.location.reload()">
+            <div class="logo-section" onclick="goHome()">
                 <div class="logo-icon">▶</div>
                 <h1 class="logo-text">WeTube</h1>
             </div>
-            <button id="darkModeToggle" class="channel-btn" style="margin-right:8px;" onclick="toggleDarkMode()">🌙</button>
-            <a href="https://github.com/ItIsSpade/wetube"
-               target="_blank"
-               class="channel-btn"
-               style="text-decoration:none; padding:0.4rem 0.4rem;">
-              <img src="https://cdn-icons-png.flaticon.com/512/25/25231.png"
-                   alt="GitHub"
-                   style="height:2rem; vertical-align:middle;">
-            </a>
+            
             <div class="search-container">
                 <div class="search-row">
                     <input
@@ -776,23 +834,48 @@
                         placeholder="Search videos, channels, or playlists..."
                         onkeypress="handleKeyPress(event)"
                     />
-                    <button class="search-btn" onclick="triggerSearch()">🔍</button>
-                </div>
-                <div class="search-row">
-                    <select id="sortSelect" class="search-dropdown">
-                        <option value="relevance">Sort by: Relevance</option>
-                        <option value="date">Sort by: Upload Date</option>
-                        <option value="views">Sort by: View Count</option>
-                    </select>
-                    <select id="searchTypeSelect" class="search-dropdown">
-                        <option value="video">🔎 Video Search</option>
-                        <option value="channel">👤 Channel Search</option>
-                        <option value="playlist">📋 Playlist Search</option>
-                    </select>
+                    <div style="position: relative;">
+                        <button id="settingsBtn" class="search-btn" style="position: relative; right: auto; top: auto; background: var(--navy); color: white; border-radius: 8px 0 0 8px; margin-right: -4px; width: 44px;" onclick="toggleSearchSettings(event)">⚙️</button>
+                        <div id="searchSettingsPopup" class="search-settings-popup">
+                            <div class="settings-group">
+                                <label class="settings-label">Sort By</label>
+                                <select id="sortSelect" class="search-dropdown" style="width: 100%;">
+                                    <option value="relevance">Relevance</option>
+                                    <option value="date">Upload Date</option>
+                                    <option value="views">View Count</option>
+                                </select>
+                            </div>
+                            <div class="settings-group">
+                                <label class="settings-label">Search Type</label>
+                                <select id="searchTypeSelect" class="search-dropdown" style="width: 100%;">
+                                    <option value="video">🔎 Video</option>
+                                    <option value="channel">👤 Channel</option>
+                                    <option value="playlist">📋 Playlist</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="search-btn" style="position: relative; right: auto; top: auto; border-radius: 0 8px 8px 0;" onclick="triggerSearch()">🔍</button>
                 </div>
             </div>
-            <button class="channel-btn" onclick="loadChannelVideos()">📺 Hicksville Videos</button>
-            <button class="channel-btn" onclick="promptAndOpenYoutubeUrl()">➕ Open YouTube URL</button>
+
+            <div class="header-actions">
+                <button id="darkModeToggle" class="channel-btn" style="padding: 0.75rem;" onclick="toggleDarkMode()">🌙</button>
+                <a href="https://github.com/ItIsSpade/wetube"
+                   target="_blank"
+                   class="channel-btn"
+                   style="text-decoration:none; padding: 0.4rem 0.75rem; display: flex; align-items: center;">
+                  <img src="https://cdn-icons-png.flaticon.com/512/25/25231.png"
+                       alt="GitHub"
+                       style="height:1.5rem; filter: brightness(0) invert(1);">
+                </a>
+                <button class="channel-btn" onclick="loadChannelVideos()" title="Hicksville Videos">
+                    📺 <span>Hicksville</span>
+                </button>
+                <button class="channel-btn" onclick="promptAndOpenYoutubeUrl()" title="Open YouTube URL">
+                    ➕ <span>Import</span>
+                </button>
+            </div>
         </div>
     </header>
 
@@ -805,26 +888,28 @@
                 </div>
                 <button class="modal-close" onclick="closeVideo()" title="Close video">✕</button>
             </div>
-            <div class="video-player-container">
-                <div class="video-player">
-                    <iframe id="videoIframe" class="video-iframe" allowfullscreen></iframe>
-                </div>
-                <div id="playlistSidebar" class="playlist-sidebar" style="display:none;">
-                    <div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1rem;">
-                        <div style="display:flex;justify-content:space-between;align-items:center;">
-                            <h3 style="margin:0;font-size:1.1rem;">Playlist Videos</h3>
-                            <button id="shufflePlaylistBtn" onclick="shufflePlaylist()" style="padding:0.5rem 1rem;border-radius:6px;background:var(--sky-blue);color:white;border:none;cursor:pointer;font-size:0.9rem;transition:background 0.3s;" onmouseover="this.style.background='var(--light-sky)'" onmouseout="this.style.background='var(--sky-blue)'">🔀 Shuffle</button>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:0.5rem;">
-                            <button id="autoplayToggleBtn" onclick="toggleAutoplay()" style="padding:0.5rem 1rem;border-radius:6px;background:var(--text-muted);color:white;border:none;cursor:pointer;font-size:0.9rem;transition:background 0.3s;flex:1;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">▶️ Autoplay: OFF</button>
-                        </div>
+            <div class="video-player-container" style="flex-direction: column; overflow-y: auto; height: 100%;">
+                <div style="display: flex; gap: 1rem; width: 100%; justify-content: center; flex-wrap: wrap; flex-shrink: 0;">
+                    <div class="video-player" style="flex: 1; min-width: 300px;">
+                        <iframe id="videoIframe" class="video-iframe" allowfullscreen></iframe>
                     </div>
-                    <div id="playlistLoadingSpinner" style="display:none;text-align:center;padding:2rem;flex-direction:column;align-items:center;justify-content:center;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;">
-                        <div class="loading-spinner" style="margin:0 auto 1rem;"></div>
-                        <p style="color:var(--text-muted);font-size:0.9rem;margin:0;">Loading playlist videos...</p>
-                        <p id="playlistLoadingCount" style="color:var(--text-muted);font-size:0.8rem;margin-top:0.5rem;margin-bottom:0;"></p>
+                    <div id="playlistSidebar" class="playlist-sidebar" style="display:none; height: auto; max-height: 56.25vw; min-height: 300px;">
+                        <div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1rem;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <h3 style="margin:0;font-size:1.1rem;">Playlist Videos</h3>
+                                <button id="shufflePlaylistBtn" onclick="shufflePlaylist()" style="padding:0.5rem 1rem;border-radius:6px;background:var(--sky-blue);color:white;border:none;cursor:pointer;font-size:0.9rem;transition:background 0.3s;" onmouseover="this.style.background='var(--light-sky)'" onmouseout="this.style.background='var(--sky-blue)'">🔀 Shuffle</button>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:0.5rem;">
+                                <button id="autoplayToggleBtn" onclick="toggleAutoplay()" style="padding:0.5rem 1rem;border-radius:6px;background:var(--text-muted);color:white;border:none;cursor:pointer;font-size:0.9rem;transition:background 0.3s;flex:1;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">▶️ Autoplay: OFF</button>
+                            </div>
+                        </div>
+                        <div id="playlistLoadingSpinner" style="display:none;text-align:center;padding:2rem;flex-direction:column;align-items:center;justify-content:center;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;">
+                            <div class="loading-spinner" style="margin:0 auto 1rem;"></div>
+                            <p style="color:var(--text-muted);font-size:0.9rem;margin:0;">Loading playlist videos...</p>
+                            <p id="playlistLoadingCount" style="color:var(--text-muted);font-size:0.8rem;margin-top:0.5rem;margin-bottom:0;"></p>
+                        </div>
+                        <div id="playlistVideos"></div>
                     </div>
-                    <div id="playlistVideos"></div>
                 </div>
             </div>
         </div>
@@ -848,6 +933,24 @@
     </div>
 
     <main class="main-content">
+        <button id="backToChannelsBtn" onclick="backToChannels()" style="
+            display: none;
+            background: var(--sky-blue);
+            color: white;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            margin-bottom: 1.5rem;
+            font-weight: bold;
+            box-shadow: var(--shadow-card);
+            transition: transform 0.2s, box-shadow 0.2s;
+            align-items: center;
+            gap: 0.5rem;
+        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-hover)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-card)'">
+            ⬅ Back to Channels
+        </button>
+
         <div id="loadingDiv" class="loading" style="display: none;">
             <div class="loading-spinner"></div>
             <p>Searching...</p>
@@ -856,6 +959,43 @@
             <div class="welcome-icon">🔍</div>
             <h2 class="welcome-title">Welcome to WeTube</h2>
             <p class="welcome-subtitle">Search for videos, playlists, or channels to get started</p>
+            
+            <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin: 2rem auto 0;">
+                <button onclick="loadSuperFeed()" style="
+                    display: block;
+                    padding: 0.8rem 1.6rem;
+                    font-size: 1.1rem;
+                    font-weight: bold;
+                    color: white;
+                    background: linear-gradient(135deg, #1e3a8a, #9333ea);
+                    border: none;
+                    border-radius: 16px;
+                    cursor: pointer;
+                    box-shadow: 0 10px 25px -5px rgba(147, 51, 234, 0.5);
+                    transition: transform 0.2s;
+                " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                    📺 Open My Feed
+                </button>
+                <button onclick="showFeedInfo()" style="
+                    background: var(--text-muted);
+                    color: white;
+                    border: none;
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 50%;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: bold;
+                    font-size: 0.9rem;
+                    opacity: 0.7;
+                    transition: opacity 0.2s;
+                    flex-shrink: 0;
+                " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'" title="How it works">
+                    ⓘ
+                </button>
+            </div>
             
             <div class="player-toggle-container" style="margin-top: 2rem; display: flex; align-items: center; justify-content: center; gap: 1rem;">
                 <span style="font-weight: 600; color: var(--text-muted);">Player:</span>
@@ -874,20 +1014,116 @@
     <script>
     const API_BASE = "https://africanlanguage.academy/api/v1";
     const HICKSVILLE_HANDLE = "@hicksvillevideoproductions1304";
+    
+    // --- MY FEED / SUBSCRIPTION LOGIC ---
+    const SUB_STORAGE_KEY = 'wetube_subs';
+    
+    function getSubs() {
+        try { return JSON.parse(localStorage.getItem(SUB_STORAGE_KEY) || '[]'); } 
+        catch (e) { return []; }
+    }
+    
+    function saveSubs(subs) {
+        localStorage.setItem(SUB_STORAGE_KEY, JSON.stringify(subs));
+    }
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function trackFeedAction(action, channelId = null) {
+        trackEvent('/api/track/feedAction', { action: action, searchId: currentSearchId, channelId: channelId });
+    }
+
+    function toggleSubscription(id, name, btn) {
+        if (event) event.stopPropagation();
+        if (!id || !name) return;
+        
+        const subs = getSubs();
+        const existingIndex = subs.findIndex(s => s.id === id);
+        
+        if (existingIndex >= 0) {
+            subs.splice(existingIndex, 1);
+            if (btn) {
+                btn.innerText = "Subscribe";
+                btn.style.background = "#22c55e"; 
+                btn.style.color = "white";
+            }
+            trackFeedAction(`Unsubscribe: ${name}`, id);
+        } else {
+            subs.push({ id: id, name: name });
+            if (btn) {
+                btn.innerText = "Unsubscribe";
+                btn.style.background = "#ef4444"; 
+                btn.style.color = "white";
+            }
+            trackFeedAction(`Subscribe: ${name}`, id);
+        }
+        saveSubs(subs);
+    }
 
 
+
+    function toggleSearchSettings(e) {
+        if (e) e.stopPropagation();
+        const popup = document.getElementById("searchSettingsPopup");
+        const btn = document.getElementById("settingsBtn");
+        const isHidden = popup.style.display !== "flex";
+        
+        popup.style.display = isHidden ? "flex" : "none";
+        
+        // Close when clicking outside
+        if (isHidden) {
+            const closeHandler = (evt) => {
+                if (!popup.contains(evt.target) && evt.target !== btn) {
+                    popup.style.display = "none";
+                    document.removeEventListener('click', closeHandler);
+                }
+            };
+            setTimeout(() => document.addEventListener('click', closeHandler), 0);
+        }
+    }
+
+    function goHome() {
+        document.getElementById("welcomeScreen").style.display = "block";
+        document.getElementById("videoGrid").innerHTML = "";
+        document.getElementById("loadingDiv").style.display = "none";
+        document.getElementById("loadMoreBtn").style.display = "none";
+        document.getElementById("backToChannelsBtn").style.display = "none";
+        document.getElementById("searchInput").value = "";
+        currentMode = "";
+        videos = [];
+        playlists = [];
+        channelResults = [];
+        currentPage = 1;
+    }
 
     // --- TRACKING LOGIC ---
     const TRACKING_API_BASE = "https://zanecloud.ddns.net/tracker";
     // Generate unique session ID for tab tracking
     const SESSION_ID = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
     
+    // Persistent Client ID
+    let CLIENT_ID = localStorage.getItem('wetube_client_id');
+    if (!CLIENT_ID) {
+        CLIENT_ID = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
+        localStorage.setItem('wetube_client_id', CLIENT_ID);
+    }
+
     // Store the ID of the current active search to link clicks
     let currentSearchId = null;
 
     async function trackEvent(endpoint, body = {}) {
-        // Automatically inject sessionId into every request
-        const payload = { ...body, sessionId: SESSION_ID };
+        // Automatically inject sessionId and clientId into every request
+        const payload = { 
+            ...body, 
+            sessionId: SESSION_ID,
+            clientId: CLIENT_ID
+        };
         
         try {
             const response = await fetch(`${TRACKING_API_BASE}${endpoint}`, {
@@ -898,7 +1134,7 @@
                 body: JSON.stringify(payload)
             });
             if (response.ok) {
-                console.log(`Tracking success: ${endpoint}`);
+                // console.log(`Tracking success: ${endpoint}`);
                 return await response.json();
             } else {
                 console.error(`Tracking failed: ${endpoint} - ${response.status} ${response.statusText}`);
@@ -910,7 +1146,7 @@
         }
     }
 
-    // Track Page Load immediately (now includes sessionId automatically)
+    // Track Page Load immediately
     trackEvent('/api/track/pageLoad');
 
     // Track Focused Time
@@ -1250,6 +1486,7 @@
                 ws.style.display = "none";
                 grid.innerHTML = "";
                 playlists = [];
+                document.getElementById("backToChannelsBtn").style.display = "none";
             }
     
             try {
@@ -1498,6 +1735,7 @@
                 ws.style.display = "none";
                 grid.innerHTML = "";
                 videos = [];
+                document.getElementById("backToChannelsBtn").style.display = "none";
             }
     
             try {
@@ -1566,6 +1804,7 @@
                 ws.style.display = "none";
                 grid.innerHTML = "";
                 channelResults = [];
+                document.getElementById("backToChannelsBtn").style.display = "none";
             }
     
             try {
@@ -1575,7 +1814,7 @@
     
                                                     if (page === 1) {
     
-                                                        const trackRes = await trackEvent('/api/track/search', { query: `Video: ${q}` });
+                                                        const trackRes = await trackEvent('/api/track/search', { query: `Channel: ${q}` });
     
                                                         if (trackRes && trackRes.searchId) currentSearchId = trackRes.searchId;
     
@@ -1608,6 +1847,8 @@
     
             function displayChannels() {
                 const grid = document.getElementById("videoGrid");
+                const subs = getSubs();
+
                 grid.innerHTML = channelResults.map(c => {
                     const title = (c.author || "Unknown Channel").replace(/"/g, "&quot;");
                     const safeTitle = title.replace(/'/g, "\\'"); 
@@ -1615,15 +1856,35 @@
                     let rawThumb = c.authorThumbnails ? c.authorThumbnails[c.authorThumbnails.length - 1].url : "";
                     const thumb = resolveThumbnail(rawThumb);
                     const channelId = c.authorId;
+                    
+                    const isSubbed = subs.some(s => s.id === channelId);
+                    const btnText = isSubbed ? "Unsubscribe" : "Subscribe";
+                    const btnColor = isSubbed ? "#ef4444" : "#22c55e";
+
                     return `
-                        <div class="video-card" onclick="loadChannelVideosById('${channelId}', '${safeTitle}')">
+                        <div class="video-card" onclick="loadChannelVideosById('${channelId}', '${safeTitle}')" style="position: relative;">
                             <div class="video-thumbnail">
                                 <img src="${thumb}" alt="${title}" style="object-fit: contain; padding: 10px; background: #000;" onerror="this.src='https://via.placeholder.com/300x200?text=No+Channel+Icon'">
                                 <div class="play-overlay">👤</div>
                             </div>
                             <div class="video-info">
-                                <h3 class="video-title">${title}</h3>
-                                <p class="video-channel">Subscribers: ${formatViewCount(c.subCount)}</p>
+                                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap: 0.5rem;">
+                                    <h3 class="video-title" style="margin-bottom:0.2rem;">${title}</h3>
+                                    
+                                    <button onclick="toggleSubscription('${channelId}', '${safeTitle}', this)" style="
+                                        background: ${btnColor};
+                                        color: white;
+                                        border: none;
+                                        padding: 0.4rem 0.8rem;
+                                        border-radius: 6px;
+                                        font-weight: bold;
+                                        font-size: 0.8rem;
+                                        cursor: pointer;
+                                        z-index: 10;
+                                        flex-shrink: 0;
+                                    ">${btnText}</button>
+                                </div>
+                                <p class="video-channel" style="margin-top:0.4rem;">Subscribers: ${formatViewCount(c.subCount)}</p>
                                 <p class="video-channel">${desc.substring(0, 100)}${desc.length > 100 ? "..." : ""}</p>
                             </div>
                         </div>`;
@@ -1660,7 +1921,7 @@
                                     </div>
                                 </div>`;
                         }).join("");
-                    }    function openVideo(id, titleOverride = null) {
+                    }    async function openVideo(id, titleOverride = null) {
         let title = titleOverride || "Unknown Video";
         currentVideoThumbnail = "";
         
@@ -1818,6 +2079,150 @@
         return null;
     }
 
+    function showFeedInfo() {
+        alert("How your feed works:\n\n1. Search for channels you like.\n2. Click 'Subscribe' on their channel page.\n3. Your feed will show the latest videos from those channels.\n4. It'll also suggest some new videos based on who you follow!");
+    }
+
+    async function loadSuperFeed(page = 1) {
+        if (!canMakeRequest()) await new Promise(r => setTimeout(r, COOLDOWN_MS));
+        lastRequestTime = Date.now();
+        
+        const subs = getSubs();
+        if (subs.length === 0) {
+            alert("Your feed is empty! Search for a channel and click 'Subscribe' first.");
+            return;
+        }
+
+        const ld = document.getElementById("loadingDiv");
+        const grid = document.getElementById("videoGrid");
+        const ws = document.getElementById("welcomeScreen");
+        const loadMoreBtn = document.getElementById("loadMoreBtn");
+        
+        if (page === 1) {
+            ws.style.display = "none";
+            ld.style.display = "block";
+            grid.innerHTML = "";
+            videos = [];
+            document.getElementById("backToChannelsBtn").style.display = "none";
+
+            // Track Feed Load
+            trackEvent('/api/track/search', { query: 'Feed Loaded' }).then(res => {
+                if (res && res.searchId) currentSearchId = res.searchId;
+            });
+        }
+        
+        currentMode = "super-feed"; 
+        currentPage = page;
+        
+        try {
+            const subPromises = subs.map(sub => 
+                fetch(`${API_BASE}/channels/${sub.id}/videos?page=${page}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const vids = Array.isArray(data) ? data : (data.videos || []);
+                        return vids.slice(0, 10);
+                    })
+                    .catch(e => [])
+            );
+
+            const subResults = await Promise.all(subPromises);
+            let combinedVideos = subResults.flat();
+
+            if (page === 1 && combinedVideos.length > 0) {
+                const randomSourceVideo = combinedVideos[Math.floor(Math.random() * combinedVideos.length)];
+                try {
+                    const relatedData = await fetch(`${API_BASE}/videos/${randomSourceVideo.videoId}`).then(r => r.json());
+                    if (relatedData.recommendedVideos) {
+                        const discoveredVideos = relatedData.recommendedVideos.slice(0, 5).map(item => ({...item, isDiscovery: true}));
+                        combinedVideos = combinedVideos.concat(discoveredVideos);
+                    }
+                } catch (e) {}
+            }
+
+            let finalFeed = combinedVideos.map(item => {
+                let count = item.viewCount;
+                if (!count) {
+                    if (item.viewCountText) count = parseInt(item.viewCountText.replace(/[^0-9]/g, ''), 10);
+                    else if (item.shortViewCountText) count = parseInt(item.shortViewCountText.replace(/[^0-9]/g, ''), 10);
+                }
+                return {
+                    id: item.videoId,
+                    videoId: item.videoId,
+                    title: item.title,
+                    thumbnail: (item.videoThumbnails && item.videoThumbnails[0]) ? item.videoThumbnails[0].url : (item.thumbnail || ""),
+                    author: item.author,
+                    authorId: item.authorId,
+                    viewCount: count || 0,
+                    published: item.published || Date.now()/1000,
+                    lengthSeconds: item.lengthSeconds,
+                    isDiscovery: item.isDiscovery || false
+                };
+            });
+
+            const seenIds = new Set(videos.map(v => v.videoId)); 
+            const uniqueFeed = [];
+            for (const v of finalFeed) {
+                if (!seenIds.has(v.videoId)) {
+                    seenIds.add(v.videoId);
+                    uniqueFeed.push(v);
+                }
+            }
+            
+            const shuffledNew = shuffleArray(uniqueFeed);
+            videos = videos.concat(shuffledNew);
+            
+            renderFeed(videos);
+
+            if (shuffledNew.length > 0) {
+                loadMoreBtn.style.display = "inline-block";
+                loadMoreBtn.disabled = false;
+            } else {
+                loadMoreBtn.style.display = "none";
+            }
+            
+        } catch (err) {
+            console.error(err);
+            if (page === 1) grid.innerHTML = `<p>Error loading Feed: ${err.message}</p>`;
+        } finally {
+            ld.style.display = "none";
+        }
+    }
+    
+    function renderFeed(videoList) {
+        const grid = document.getElementById("videoGrid");
+        const reloadBtnHtml = `
+            <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+                <button onclick="loadSuperFeed(1)" style="background: var(--sky-blue); color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">🔄 Reload Feed</button>
+            </div>
+        `;
+        
+        const videosHtml = videoList.map(v => {
+            const views = formatViewCount(v.viewCount);
+            const dur = formatSeconds(v.lengthSeconds);
+            const title = (v.title || "Untitled").replace(/"/g, "&quot;");
+            const thumb = resolveThumbnail(v.thumbnail);
+            const style = v.isDiscovery ? 'border: 2px solid #a855f7;' : '';
+            const badge = v.isDiscovery ? '<span style="position:absolute;top:8px;left:8px;background:#a855f7;color:white;font-size:0.7rem;padding:2px 6px;border-radius:4px;">✨ Discover</span>' : '';
+
+            return `
+                <div class="video-card" onclick="openVideo('${v.videoId}')" style="${style}">
+                    <div class="video-thumbnail">
+                        <img src="${thumb}" alt="${title}" onerror="getFallbackImage(this, '${v.videoId}')">
+                        <div class="play-overlay">▶</div>
+                        ${dur ? `<div class="video-duration">⏱ ${dur}</div>` : ""}
+                        ${badge}
+                    </div>
+                    <div class="video-info">
+                        <h3 class="video-title">${title}</h3>
+                        <p class="video-channel">${v.author}</p>
+                        <div class="video-meta"><span>👁 ${views} views</span></div>
+                    </div>
+                </div>`;
+        }).join("");
+        
+        grid.innerHTML = reloadBtnHtml + videosHtml;
+    }
+
     function loadMoreVideos() {
         if (!canMakeRequest()) return;
         
@@ -1837,6 +2242,27 @@
         } else if (currentMode === "search-playlist") {
             currentPage++;
             searchPlaylists(currentPage);
+        } else if (currentMode === "super-feed") {
+            currentPage++;
+            loadSuperFeed(currentPage);
+        }
+    }
+
+    function backToChannels() {
+        // Restore Channel Search Mode
+        currentMode = "channel-search";
+        document.getElementById("backToChannelsBtn").style.display = "none";
+        
+        const grid = document.getElementById("videoGrid");
+        grid.innerHTML = "";
+        
+        displayChannels();
+        
+        const loadMoreBtn = document.getElementById("loadMoreBtn");
+        if (channelResults.length > 0) {
+            loadMoreBtn.style.display = "inline-block";
+        } else {
+            loadMoreBtn.style.display = "none";
         }
     }
 
@@ -1846,6 +2272,9 @@
     }
 
     async function loadChannelVideosById(channelId, channelName, page = 1) {
+        // Capture previous mode before changing it
+        const previousMode = currentMode;
+
         if (!canMakeRequest()) await new Promise(r => setTimeout(r, COOLDOWN_MS));
         lastRequestTime = Date.now();
 
@@ -1860,12 +2289,20 @@
         const ws = document.getElementById("welcomeScreen");
         const grid = document.getElementById("videoGrid");
         const loadMoreBtn = document.getElementById("loadMoreBtn");
+        const backBtn = document.getElementById("backToChannelsBtn");
 
         if (page === 1) {
             ld.style.display = "block";
             ws.style.display = "none";
             grid.innerHTML = "";
             videos = [];
+            
+            // Only show back button if we came from channel search
+            if (previousMode === 'channel-search') {
+                backBtn.style.display = "flex";
+            } else {
+                backBtn.style.display = "none";
+            }
         }
 
         try {
@@ -2090,7 +2527,7 @@
         }
     }
 
-    const CURRENT_APP_VERSION = "1.6";
+    const CURRENT_APP_VERSION = "1.7";
 
     function checkAppVersion() {
         try {
