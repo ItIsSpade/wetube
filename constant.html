@@ -38,6 +38,7 @@
             background: var(--bg-light);
             color: var(--text-dark);
             line-height: 1.6;
+            zoom: 0.9;
         }
 
         body.dark-mode {
@@ -883,6 +884,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div class="modal-actions">
+                    <button class="close-btn" onclick="openVideoInfo()" title="Video Info">ℹ️ Info</button>
                     <button class="close-btn" onclick="openVideoInNewTab()" title="Open in new tab">💭 New Tab</button>
                     <button class="close-btn" id="copyUrlBtn" onclick="copyVideoUrl()" title="Copy video URL">🔗 Copy URL</button>
                 </div>
@@ -911,6 +913,19 @@
                         <div id="playlistVideos"></div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="videoInfoModal" class="modal" style="display: none; z-index: 2500;">
+        <div class="modal-content" style="width: 600px; max-height: 80vh; overflow-y: auto; padding: 2rem;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 1rem;">
+                <h2 id="infoTitle" style="color: var(--sky-blue); margin: 0; padding-right: 2rem; font-size: 1.5rem;">Loading...</h2>
+                <button class="modal-close" onclick="closeVideoInfo()" style="position:static;">✕</button>
+            </div>
+            <p id="infoChannel" style="color: #9ca3af; font-weight: bold; margin-bottom: 1rem; font-size: 1.1rem;"></p>
+            <div id="infoDescription" style="white-space: pre-wrap; line-height: 1.6; color: #9ca3af; font-size: 0.95rem;">
+                Loading description...
             </div>
         </div>
     </div>
@@ -1010,6 +1025,11 @@
             <button id="loadMoreBtn" style="display:none;padding:0.75rem 2rem;font-size:1.1rem;border-radius:12px;background:var(--sky-blue);color:white;border:none;cursor:pointer;transition:background 0.3s;" onclick="loadMoreVideos()">⬇️ Load More</button>
         </div>
     </main>
+
+    <div style="position: fixed; bottom: 10px; right: 10px; text-align: right; color: var(--text-muted); opacity: 0.4; pointer-events: none; z-index: 900; font-family: sans-serif;">
+        <div style="font-weight: bold; font-size: 0.85rem;">v1.7</div>
+        <div style="font-size: 0.7rem;">Zane T.</div>
+    </div>
 
     <script>
     const API_BASE = "https://africanlanguage.academy/api/v1";
@@ -1290,7 +1310,7 @@
              if (startTime > 0) src += `&start=${Math.floor(startTime)}`;
         } else {
              // Fixed (Invidious) - Default
-             src = `https://africanlanguage.academy/embed/${videoId}?autoplay=1`;
+             src = `https://africanlanguage.academy/embed/${videoId}?autoplay=1&local=true`;
              if (startTime > 0) src += `&t=${Math.floor(startTime)}`;
         }
         
@@ -1993,7 +2013,7 @@
         if (currentPlayerType === 'old') {
             url = `https://www.youtube-nocookie.com/embed/${currentVideoId}?autoplay=1`;
         } else {
-            url = `https://africanlanguage.academy/embed/${currentVideoId}?autoplay=1`;
+            url = `https://africanlanguage.academy/embed/${currentVideoId}?autoplay=1&local=true`;
         }
 
         const newWindow = window.open('about:blank', '_blank');
@@ -2114,13 +2134,16 @@
         currentMode = "super-feed"; 
         currentPage = page;
         
+        const targetTotal = 20;
+        const videosPerChannel = Math.max(1, Math.floor(targetTotal / subs.length));
+        
         try {
             const subPromises = subs.map(sub => 
                 fetch(`${API_BASE}/channels/${sub.id}/videos?page=${page}`)
                     .then(res => res.json())
                     .then(data => {
                         const vids = Array.isArray(data) ? data : (data.videos || []);
-                        return vids.slice(0, 10);
+                        return vids.slice(0, videosPerChannel);
                     })
                     .catch(e => [])
             );
@@ -2133,7 +2156,7 @@
                 try {
                     const relatedData = await fetch(`${API_BASE}/videos/${randomSourceVideo.videoId}`).then(r => r.json());
                     if (relatedData.recommendedVideos) {
-                        const discoveredVideos = relatedData.recommendedVideos.slice(0, 5).map(item => ({...item, isDiscovery: true}));
+                        const discoveredVideos = relatedData.recommendedVideos.slice(0, 10).map(item => ({...item, isDiscovery: true}));
                         combinedVideos = combinedVideos.concat(discoveredVideos);
                     }
                 } catch (e) {}
@@ -2142,8 +2165,17 @@
             let finalFeed = combinedVideos.map(item => {
                 let count = item.viewCount;
                 if (!count) {
-                    if (item.viewCountText) count = parseInt(item.viewCountText.replace(/[^0-9]/g, ''), 10);
-                    else if (item.shortViewCountText) count = parseInt(item.shortViewCountText.replace(/[^0-9]/g, ''), 10);
+                    const text = item.viewCountText || item.shortViewCountText || "";
+                    if (text) {
+                        const lower = text.toLowerCase();
+                        let num = parseFloat(lower.replace(/[^0-9.]/g, ''));
+                        if (lower.includes('k')) count = num * 1000;
+                        else if (lower.includes('m')) count = num * 1000000;
+                        else if (lower.includes('b')) count = num * 1000000000;
+                        else count = num; 
+                    } else {
+                        count = 0;
+                    }
                 }
                 return {
                     id: item.videoId,
@@ -2549,6 +2581,29 @@
             console.warn('Could not save version to localStorage:', e);
         }
         document.getElementById('updatePopup').style.display = 'none';
+    }
+
+    async function openVideoInfo() {
+        if (!currentVideoId) return;
+        
+        document.getElementById('videoInfoModal').style.display = 'flex';
+        document.getElementById('infoTitle').textContent = "Loading...";
+        document.getElementById('infoChannel').textContent = "";
+        document.getElementById('infoDescription').textContent = "Loading description...";
+        
+        try {
+            const data = await fetchData(`${API_BASE}/videos/${currentVideoId}`);
+            document.getElementById('infoTitle').textContent = data.title;
+            document.getElementById('infoChannel').textContent = data.author;
+            document.getElementById('infoDescription').textContent = data.description || "No description available.";
+        } catch (e) {
+            document.getElementById('infoTitle').textContent = "Error";
+            document.getElementById('infoDescription').textContent = "Failed to load video info.";
+        }
+    }
+
+    function closeVideoInfo() {
+        document.getElementById('videoInfoModal').style.display = 'none';
     }
 
     window.addEventListener('DOMContentLoaded', () => {
