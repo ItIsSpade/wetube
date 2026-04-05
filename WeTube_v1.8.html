@@ -802,15 +802,123 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+        /* Recent Search Dropdown */
+        .recent-searches {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            margin-top: 4px;
+            z-index: 1001;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        .search-container:focus-within .recent-searches {
+            display: flex;
+        }
+        .search-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.2s;
+            color: var(--text-dark);
+            font-size: 0.95rem;
+        }
+        .search-item:hover {
+            background: rgba(0,0,0,0.05);
+        }
+        .search-item::before {
+            content: "🕒";
+            font-size: 0.8rem;
+            opacity: 0.6;
+        }
+        body.dark-mode .recent-searches {
+            background: #1e293b;
+            border-color: #334155;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+        }
+        body.dark-mode .search-item {
+            color: #e5e7eb;
+        }
+        body.dark-mode .search-item:hover {
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* Empty Feed State */
+        .empty-feed {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 4rem 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            margin-top: 2rem;
+        }
+        .empty-feed-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+        .empty-feed-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .empty-feed-text {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .feed-instructions {
+            text-align: left;
+            max-width: 450px;
+            margin: 0 auto;
+            background: rgba(0,0,0,0.05);
+            padding: 1.5rem;
+            border-radius: 16px;
+            line-height: 1.8;
+        }
+        body.dark-mode .feed-instructions {
+            background: rgba(255,255,255,0.03);
+        }
+        .instruction-step {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .step-num {
+            background: var(--sky-blue);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
     </style>
 </head>
 <body class="dark-mode">
     <div id="updatePopup" class="update-modal" style="display: none;">
         <div class="update-modal-content">
-            <div class="update-icon">💪</div>
-            <h2 class="update-title">Welcome to WeTube v1.7!</h2>
+            <div class="update-icon">🥲</div>
+            <h2 class="update-title">Welcome to WeTube v1.8!</h2>
             <p class="update-text">
-                Added a feed since some people don't know what to watch lol, and fixed the layout to make it look and work better (Click the info button beside the 'Open Feed' to learn how to use it).
+                Made YT player the default player for ease of use, and added a button to fix the video if it has a white screen, so you should always be able to watch at least a 720p video.
                 If anything has stopped working because of this change, please let Zane know and he'll try to fix it :] Happy watching!
             </p>
             <div class="update-actions">
@@ -858,6 +966,7 @@
                     </div>
                     <button class="search-btn" style="position: relative; right: auto; top: auto; border-radius: 0 8px 8px 0;" onclick="triggerSearch()">🔍</button>
                 </div>
+                <div id="recentSearches" class="recent-searches"></div>
             </div>
 
             <div class="header-actions">
@@ -881,16 +990,16 @@
     </header>
 
     <div id="videoModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-actions">
-                    <button class="close-btn" onclick="openVideoInfo()" title="Video Info">ℹ️ Info</button>
-                    <button class="close-btn" onclick="openVideoInNewTab()" title="Open in new tab">💭 New Tab</button>
-                    <button class="close-btn" id="copyUrlBtn" onclick="copyVideoUrl()" title="Copy video URL">🔗 Copy URL</button>
-                </div>
-                <button class="modal-close" onclick="closeVideo()" title="Close video">✕</button>
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-actions">
+                <button class="close-btn" onclick="openVideoInfo()" title="Video Info">ℹ️ Info</button>
+                <button class="close-btn" onclick="fixWhiteScreen()" title="Click here if the video shows a white screen">❓ Fix</button>
+                <button class="close-btn" onclick="openVideoInNewTab()" title="Open in new tab">💭 New Tab</button>
+                <button class="close-btn" id="copyUrlBtn" onclick="copyVideoUrl()" title="Copy video URL">🔗 Copy URL</button>
             </div>
-            <div class="video-player-container" style="flex-direction: column; overflow-y: auto; height: 100%;">
+            <button class="modal-close" onclick="closeVideo()" title="Close video">✕</button>
+        </div>            <div class="video-player-container" style="flex-direction: column; overflow-y: auto; height: 100%;">
                 <div style="display: flex; gap: 1rem; width: 100%; justify-content: center; flex-wrap: wrap; flex-shrink: 0;">
                     <div class="video-player" style="flex: 1; min-width: 300px;">
                         <iframe id="videoIframe" class="video-iframe" allowfullscreen></iframe>
@@ -1011,14 +1120,6 @@
                     ⓘ
                 </button>
             </div>
-            
-            <div class="player-toggle-container" style="margin-top: 2rem; display: flex; align-items: center; justify-content: center; gap: 1rem;">
-                <span style="font-weight: 600; color: var(--text-muted);">Player:</span>
-                <div style="display: flex; background: rgba(0,0,0,0.05); border-radius: 20px; padding: 4px;">
-                    <button id="playerToggleFixed" onclick="setPlayerType('fixed')" style="border: none; background: var(--sky-blue); color: white; padding: 6px 16px; border-radius: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Fixed</button>
-                    <button id="playerToggleOld" onclick="setPlayerType('old')" style="border: none; background: transparent; color: var(--text-muted); padding: 6px 16px; border-radius: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Old</button>
-                </div>
-            </div>
         </div>
         <div id="videoGrid" class="video-grid"></div>
         <div style="text-align:center;margin-top:2rem;">
@@ -1026,8 +1127,14 @@
         </div>
     </main>
 
-    <div style="position: fixed; bottom: 10px; right: 10px; text-align: right; color: var(--text-muted); opacity: 0.4; pointer-events: none; z-index: 900; font-family: sans-serif;">
-        <div style="font-weight: bold; font-size: 0.85rem;">v1.7</div>
+    <!-- Global Status Bar -->
+    <div id="globalStatusBar" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: rgba(30, 58, 138, 0.9); color: white; padding: 10px; text-align: center; z-index: 1000; backdrop-filter: blur(5px); border-top: 1px solid rgba(14, 165, 233, 0.3); font-weight: 500;">
+        <span id="statusText"></span>
+        <button onclick="this.parentElement.style.display='none'" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: white; cursor: pointer; font-size: 1.2rem; opacity: 0.7;">✕</button>
+    </div>
+
+    <div style="position: fixed; bottom: 10px; left: 10px; text-align: left; color: var(--text-muted); opacity: 0.4; pointer-events: none; z-index: 9999; font-family: sans-serif;">
+        <div style="font-weight: bold; font-size: 0.85rem;">v1.8</div>
         <div style="font-size: 0.7rem;">Zane T.</div>
     </div>
 
@@ -1138,6 +1245,9 @@
     let currentSearchId = null;
 
     async function trackEvent(endpoint, body = {}) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+
         // Automatically inject sessionId and clientId into every request
         const payload = { 
             ...body, 
@@ -1151,23 +1261,46 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
             if (response.ok) {
-                // console.log(`Tracking success: ${endpoint}`);
                 return await response.json();
             } else {
-                console.error(`Tracking failed: ${endpoint} - ${response.status} ${response.statusText}`);
                 return null;
             }
         } catch (e) {
-            console.error('Tracking error:', e);
+            clearTimeout(timeoutId);
+            if (e.name === 'AbortError') {
+                // Silently time out to keep console clean
+            } else {
+                console.error('Tracking error:', e);
+            }
             return null;
         }
     }
 
     // Track Page Load immediately
     trackEvent('/api/track/pageLoad');
+
+    // Fetch and display global status
+    async function updateGlobalStatus() {
+        try {
+            const response = await fetch(`${TRACKING_API_BASE}/api/status`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.message && data.message.trim() !== "") {
+                    document.getElementById('statusText').innerText = data.message;
+                    document.getElementById('globalStatusBar').style.display = 'block';
+                } else {
+                    document.getElementById('globalStatusBar').style.display = 'none';
+                }
+            }
+        } catch (e) {
+            console.error('Error fetching status:', e);
+        }
+    }
 
     // Track Focused Time
     let accumulatedTime = 0;
@@ -1188,9 +1321,19 @@
     let currentPlaylistVideos = [];
     let currentPlaylistIndex = 0;
     let playlistAutoplayEnabled = false;
-    let currentPlayerType = 'fixed';
+    let currentPlayerType = 'youtube'; // Default to youtube
     let youtubePlayer = null;
     let youtubePlayerReady = false;
+    let lastKnownTime = 0;
+
+    function fixWhiteScreen() {
+        const timeToResume = lastKnownTime;
+        currentPlayerType = 'wetube';
+        alert('Now switching temporarily to wetube player, to fix this issue, please quit and re open your browser.');
+        if (currentVideoId) {
+            initYouTubePlayer(currentVideoId, timeToResume);
+        }
+    }
 
     // Globals for Channel Pagination
     let currentChannelName = "";
@@ -1222,36 +1365,19 @@
     function loadPlayerSetting() {
         try {
             const saved = localStorage.getItem('wetube-player-type');
-            if (saved === 'old') {
-                setPlayerType('old', false);
+            if (saved === 'wetube') {
+                setPlayerType('wetube', false);
             } else {
-                setPlayerType('fixed', false);
+                setPlayerType('youtube', false);
             }
         } catch (e) {
-            setPlayerType('fixed', false);
+            setPlayerType('youtube', false);
         }
     }
 
     function setPlayerType(type, save = true) {
         currentPlayerType = type;
         
-        const btnFixed = document.getElementById('playerToggleFixed');
-        const btnOld = document.getElementById('playerToggleOld');
-        
-        if (btnFixed && btnOld) {
-            if (type === 'fixed') {
-                btnFixed.style.background = 'var(--sky-blue)';
-                btnFixed.style.color = 'white';
-                btnOld.style.background = 'transparent';
-                btnOld.style.color = 'var(--text-muted)';
-            } else {
-                btnOld.style.background = 'var(--sky-blue)';
-                btnOld.style.color = 'white';
-                btnFixed.style.background = 'transparent';
-                btnFixed.style.color = 'var(--text-muted)';
-            }
-        }
-
         if (save) {
             try {
                 localStorage.setItem('wetube-player-type', type);
@@ -1285,42 +1411,75 @@
     }
 
     function initYouTubePlayer(videoId, startTime = 0) {
-        // 1. Destroy existing iframe and recreate it to force a fresh connection
+        lastKnownTime = startTime;
         const container = document.querySelector('.video-player');
-        const oldIframe = document.getElementById("videoIframe");
         
-        if (oldIframe) {
-            oldIframe.remove();
-        }
+        // Find and remove any existing player (either iframe or our custom video tag)
+        const oldPlayer = document.getElementById("videoIframe") || document.getElementById("myPlayer");
+        if (oldPlayer) oldPlayer.remove();
 
-        const newIframe = document.createElement('iframe');
-        newIframe.id = "videoIframe";
-        newIframe.className = "video-iframe";
-        newIframe.allowFullscreen = true;
-        newIframe.referrerPolicy = "no-referrer-when-downgrade";
-        newIframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
-        // Re-append to container
-        container.insertBefore(newIframe, container.firstChild);
-
-        // Embed Logic based on Player Type
-        let src = "";
-        if (currentPlayerType === 'old') {
-             // Old (Original YouTube)
-             src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`;
+        if (currentPlayerType === 'youtube') {
+             // 1. Original YouTube Iframe
+             const newIframe = document.createElement('iframe');
+             newIframe.id = "videoIframe";
+             newIframe.className = "video-iframe";
+             newIframe.allowFullscreen = true;
+             newIframe.referrerPolicy = "origin";
+             newIframe.allow = "autoplay; encrypted-media; picture-in-picture";
+             
+             const origin = window.location.origin === "null" ? "" : window.location.origin;
+             const cacheBuster = Math.floor(Math.random() * 1000000);
+             let src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1&origin=${origin}&_=${cacheBuster}`;
              if (startTime > 0) src += `&start=${Math.floor(startTime)}`;
+             newIframe.src = src;
+             container.insertBefore(newIframe, container.firstChild);
         } else {
-             // Fixed (Invidious) - Default
-             src = `https://africanlanguage.academy/embed/${videoId}?autoplay=1&local=true`;
-             if (startTime > 0) src += `&t=${Math.floor(startTime)}`;
+             // 2. WeTube (ZaneCloud) - Custom Stream (Native Video Tag)
+             const videoElement = document.createElement('video');
+             videoElement.id = "myPlayer";
+             videoElement.className = "video-iframe";
+             videoElement.controls = true;
+             videoElement.autoplay = true;
+             videoElement.style.width = "100%";
+             videoElement.style.height = "100%";
+             videoElement.style.background = "black";
+             
+             // Set the source directly as requested
+             videoElement.src = `http://wetube.zanecloud.ddns.net/stream?id=${videoId}`;
+
+             if (startTime > 0) {
+                 videoElement.currentTime = startTime;
+             }
+             
+             container.insertBefore(videoElement, container.firstChild);
+
+             videoElement.ontimeupdate = () => {
+                 lastKnownTime = videoElement.currentTime;
+             };
+             
+             videoElement.onended = () => {
+                 if (playlistAutoplayEnabled && currentPlaylistVideos.length > 0) {
+                     playNextVideoInPlaylist();
+                 }
+             };
         }
-        
-        newIframe.src = src;
     }
 
     window.addEventListener('message', function(e) {
         try {
             // Attempt to parse Invidious/YouTube formatted messages
             const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+            if (!data) return;
+
+            // Capture current time from YouTube or WeTube (Invidious)
+            if (data.event === 'timeupdate' && typeof data.time === 'number') {
+                lastKnownTime = data.time;
+            } else if (data.event === 'infoDelivery' && data.info && typeof data.info.currentTime === 'number') {
+                lastKnownTime = data.info.currentTime;
+            } else if (data.info && typeof data.info.currentTime === 'number') {
+                lastKnownTime = data.info.currentTime;
+            }
+
             // Check for 'ended' event
             if (data && (data.event === 'ended' || data.info === 'ended')) {
                 if (playlistAutoplayEnabled && currentPlaylistVideos.length > 0) {
@@ -1365,7 +1524,45 @@
         if (e.key === "Enter") triggerSearch();
     }
 
+    const RECENT_SEARCHES_KEY = 'wetube_recent_searches';
+
+    function getRecentSearches() {
+        try { return JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY) || '[]'); }
+        catch (e) { return []; }
+    }
+
+    function saveRecentSearch(query) {
+        if (!query || query.trim() === "") return;
+        let searches = getRecentSearches();
+        searches = searches.filter(s => s.toLowerCase() !== query.toLowerCase());
+        searches.unshift(query);
+        searches = searches.slice(0, 5);
+        localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches));
+        renderRecentSearches();
+    }
+
+    function renderRecentSearches() {
+        const container = document.getElementById('recentSearches');
+        if (!container) return;
+        const searches = getRecentSearches();
+        if (searches.length === 0) {
+            container.innerHTML = "";
+            return;
+        }
+        container.innerHTML = searches.map(s => `
+            <div class="search-item" onmousedown="quickSearch('${s.replace(/'/g, "\\'")}')">${s}</div>
+        `).join("");
+    }
+
+    function quickSearch(query) {
+        document.getElementById('searchInput').value = query;
+        triggerSearch();
+    }
+
     function triggerSearch() {
+        const q = document.getElementById("searchInput").value.trim();
+        if (q) saveRecentSearch(q);
+
         if (currentSearchType === "video") {
             searchVideos();
         } else if (currentSearchType === "channel") {
@@ -2010,8 +2207,10 @@
         if (!currentVideoId) return;
         
         let url = "";
-        if (currentPlayerType === 'old') {
-            url = `https://www.youtube-nocookie.com/embed/${currentVideoId}?autoplay=1`;
+        if (currentPlayerType === 'youtube') {
+            const origin = window.location.origin === "null" ? "" : window.location.origin;
+            const cacheBuster = Math.floor(Math.random() * 1000000);
+            url = `https://www.youtube-nocookie.com/embed/${currentVideoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1&origin=${origin}&_=${cacheBuster}`;
         } else {
             url = `https://africanlanguage.academy/embed/${currentVideoId}?autoplay=1&local=true`;
         }
@@ -2023,7 +2222,7 @@
                 <html>
                 <head><title>WeTube Video</title></head>
                 <body style="margin:0;padding:0;background:#000;">
-                <iframe src="${url}" style="width:100vw;height:100vh;border:none;" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
+                <iframe src="${url}" style="width:100vw;height:100vh;border:none;" allowfullscreen referrerpolicy="origin"></iframe>
                 </body>
                 </html>
             `);
@@ -2107,17 +2306,43 @@
         if (!canMakeRequest()) await new Promise(r => setTimeout(r, COOLDOWN_MS));
         lastRequestTime = Date.now();
         
+        const grid = document.getElementById("videoGrid");
+        const ws = document.getElementById("welcomeScreen");
+        const ld = document.getElementById("loadingDiv");
+        const loadMoreBtn = document.getElementById("loadMoreBtn");
+
         const subs = getSubs();
         if (subs.length === 0) {
-            alert("Your feed is empty! Search for a channel and click 'Subscribe' first.");
+            ws.style.display = "none";
+            grid.innerHTML = `
+                <div class="empty-feed">
+                    <span class="empty-feed-icon">📺</span>
+                    <h2 class="empty-feed-title">Your feed is empty</h2>
+                    <p class="empty-feed-text">Follow these steps to build your custom feed:</p>
+                    <div class="feed-instructions">
+                        <div class="instruction-step">
+                            <div class="step-num">1</div>
+                            <div>🔍 Use the <b>search bar</b> to find channels you like.</div>
+                        </div>
+                        <div class="instruction-step">
+                            <div class="step-num">2</div>
+                            <div>👤 Click on a <b>channel</b> to view their page.</div>
+                        </div>
+                        <div class="instruction-step">
+                            <div class="step-num">3</div>
+                            <div>✅ Press the <b>Subscribe</b> button on that channel.</div>
+                        </div>
+                        <div class="instruction-step">
+                            <div class="step-num">4</div>
+                            <div>📺 Return here to see the <b>latest videos</b> from everyone you follow!</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            loadMoreBtn.style.display = "none";
             return;
         }
 
-        const ld = document.getElementById("loadingDiv");
-        const grid = document.getElementById("videoGrid");
-        const ws = document.getElementById("welcomeScreen");
-        const loadMoreBtn = document.getElementById("loadMoreBtn");
-        
         if (page === 1) {
             ws.style.display = "none";
             ld.style.display = "block";
@@ -2431,7 +2656,7 @@
 
     function saveWatchState() {
         if (currentVideoId && document.getElementById("videoModal").style.display !== "none") {
-            let time = 0;
+            let time = lastKnownTime;
             if (youtubePlayer && typeof youtubePlayer.getCurrentTime === 'function') {
                 try {
                     time = youtubePlayer.getCurrentTime();
@@ -2559,7 +2784,7 @@
         }
     }
 
-    const CURRENT_APP_VERSION = "1.7";
+    const CURRENT_APP_VERSION = "1.8";
 
     function checkAppVersion() {
         try {
@@ -2627,6 +2852,9 @@
         initFilters();
         checkAppVersion();
         checkWatchState();
+        renderRecentSearches();
+        updateGlobalStatus();
+        setInterval(updateGlobalStatus, 60000);
     });
 </script>
 
