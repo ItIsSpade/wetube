@@ -2185,14 +2185,21 @@
 
     function closeVideo() {
         const modal = document.getElementById("videoModal");
-        const iframe = document.getElementById("videoIframe");
+        const player = document.getElementById("videoIframe") || document.getElementById("myPlayer");
         
         if (youtubePlayer) {
             try { youtubePlayer.destroy(); } catch (e) {}
             youtubePlayer = null;
         }
 
-        iframe.src = "";
+        if (player) {
+            player.src = "";
+            if (player.tagName === 'VIDEO') {
+                player.pause();
+                player.load();
+            }
+        }
+
         modal.style.display = "none";
         currentVideoId = null;
         currentPlaylistId = null;
