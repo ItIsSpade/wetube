@@ -432,14 +432,20 @@
         .modal-content {
             background: white;
             border-radius: 12px;
-            width: 1040px;
-            max-width: min(96vw, 120vh);
-            max-height: 90vh;
+            width: 1200px; /* Default large size for single videos */
+            max-width: 95vw;
+            height: 90vh;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             align-items: stretch;
             position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .modal-content.has-playlist {
+            width: min-content; /* Hug the contents when playlist is active */
         }
 
         .modal-header {
@@ -449,21 +455,33 @@
             gap: 0.5rem;
             position: relative;
             padding-right: 56px; /* reserve space for absolute X */
+            flex-shrink: 0;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
         }
 
         .modal .close-btn {
             background: none;
             border: none;
-            font-size: 1.05rem; /* smaller */
+            font-size: 0.95rem;
             cursor: pointer;
-            padding: 0.35rem 0.5rem;
-            border-radius: 6px;
-            transition: background 0.2s ease;
-            color: #9ca3af;
+            padding: 0.4rem 0.75rem;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            color: var(--text-muted);
+            font-weight: 600;
         }
 
         .modal .close-btn:hover {
-            background: rgba(0,0,0,0.04);
+            background: rgba(0,0,0,0.05);
+            color: var(--navy);
+        }
+
+        body.dark-mode .modal .close-btn {
+            color: #94a3b8;
+        }
+        body.dark-mode .modal .close-btn:hover {
+            background: rgba(255,255,255,0.05);
+            color: #60a5fa;
         }
 
         .modal-actions {
@@ -484,106 +502,244 @@
             color: #6b7280;
             padding: 6px;
             border-radius: 6px;
+            z-index: 10;
         }
 
-        .modal-close:hover { background: rgba(0,0,0,0.04); }
+        .modal-close:hover { background: rgba(0,0,0,0.05); }
 
-        .video-player-container {
-            padding: 0.75rem 1rem 1rem; /* restored original padding so it looks 'in' the popup */
+        .modal-body {
             display: flex;
-            gap: 1rem;
-            justify-content: center; /* keep player centered inside modal */
-            width: 100%;
+            flex-direction: row;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+            padding: 1.5rem;
+            gap: 1.5rem;
             box-sizing: border-box;
+            background: rgba(0,0,0,0.02);
+        }
+
+        body.modal-open {
+            overflow: hidden !important;
+        }
+
+        @media (max-width: 1100px) {
+            .modal-content { 
+                width: 98vw !important;
+                height: 95vh; 
+            }
+            .modal-body {
+                flex-direction: column;
+                overflow-y: auto;
+                padding: 1rem;
+            }
+            .video-section {
+                width: 100% !important;
+                flex: none !important;
+                min-width: 0 !important;
+            }
+            .video-player {
+                width: 100% !important;
+                max-height: 45vh !important;
+            }
+            .playlist-sidebar {
+                max-width: 100% !important;
+                width: 100% !important;
+                height: 500px !important;
+                flex: none !important;
+                margin-top: 1rem;
+            }
+        }
+
+        .video-section {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: min(800px, 60vw);
+            min-height: 0;
         }
 
         .video-player {
             position: relative;
+            aspect-ratio: 16 / 9;
             width: 100%;
-            max-width: 1000px; /* allow the player to grow larger */
-            padding-top: 56.25%; /* 16:9 Aspect Ratio */
-            margin: 0 auto;
+            height: auto;
+            max-height: 100%;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .video-iframe {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: -1px;
+            left: -1px;
+            width: calc(100% + 2px);
+            height: calc(100% + 2px);
             border: none;
-            border-radius: 8px;
-            background: #000;
         }
 
         .playlist-sidebar {
-            width: 300px;
-            max-height: 500px;
-            overflow-y: auto;
+            width: 400px;
+            flex: none;
             background: #f8fafc;
-            border-radius: 8px;
-            padding: 1rem;
-            position: relative;
+            border-radius: 16px;
+            padding: 1.25rem;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 0;
+            box-sizing: border-box;
         }
-        .playlist-sidebar.loading {
-            pointer-events: none;
-            user-select: none;
+
+        .playlist-header {
+            margin-bottom: 1rem;
+            flex-shrink: 0;
         }
-        .playlist-sidebar.loading * {
-            pointer-events: none;
-        }
-        .playlist-sidebar.loading #playlistLoadingSpinner {
-            display: flex !important;
-        }
-        .playlist-sidebar.loading #playlistVideos {
-            opacity: 0.5;
-            pointer-events: none;
+
+        .playlist-videos-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+            flex: 1;
+            min-height: 0;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
         }
 
         .playlist-video-item {
             display: flex;
-            gap: 0.5rem;
-            padding: 0.5rem;
-            margin-bottom: 0.5rem;
-            border-radius: 6px;
+            flex-direction: row; /* Horizontal layout inside sidebar */
+            gap: 0.75rem;
+            padding: 0.6rem;
+            border-radius: 12px;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.2s;
             border: 1px solid #e2e8f0;
-        }
-
-        .playlist-video-item:hover {
-            background: #e2e8f0;
-        }
-
-        .playlist-video-item.active {
-            background: #dbeafe;
-            border-color: #3b82f6;
+            background: white;
+            align-items: center;
+            position: relative;
         }
 
         .playlist-video-thumb {
-            width: 80px;
-            height: 45px;
+            width: 120px;
+            aspect-ratio: 16/9;
             object-fit: cover;
-            border-radius: 4px;
+            border-radius: 6px;
+            flex-shrink: 0;
+        }
+
+        .playlist-video-item.active {
+            background: #eff6ff;
+            border-color: #3b82f6;
+            border-width: 2px;
         }
 
         .playlist-video-info {
             flex: 1;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
         }
 
         .playlist-video-title {
-            font-weight: 500;
-            margin-bottom: 0.25rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            line-height: 1.4;
+            color: var(--text-dark);
         }
 
         .playlist-video-channel {
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             color: var(--text-muted);
+        }
+
+        /* Autoplay Toggle Styling */
+        .toggle-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.6rem 1.2rem;
+            border-radius: 50px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            color: var(--text-muted);
+        }
+
+        .toggle-btn.active {
+            background: var(--sky-blue);
+            border-color: var(--sky-blue);
+            color: white;
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+        }
+
+        .toggle-btn:hover {
+            border-color: var(--sky-blue);
+            transform: scale(1.02);
+        }
+
+        .shuffle-btn {
+            background: var(--navy);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .shuffle-btn:hover {
+            background: var(--navy-dark);
+            transform: scale(1.02);
+        }
+
+        body.dark-mode .playlist-sidebar {
+            background: #1e293b;
+            border-color: #334155;
+        }
+        body.dark-mode .playlist-video-item {
+            background: #0f172a;
+            border-color: #334155;
+        }
+        body.dark-mode .playlist-video-item:hover {
+            background: #1e293b;
+            border-color: var(--sky-blue);
+        }
+        body.dark-mode .playlist-video-item.active {
+            background: #1e3a8a;
+            border-color: #3b82f6;
+        }
+        body.dark-mode .playlist-video-title {
+            color: #f1f5f9;
+        }
+        body.dark-mode .toggle-btn {
+            background: #0f172a;
+            border-color: #334155;
+            color: #94a3b8;
+        }
+        body.dark-mode .toggle-btn.active {
+            background: var(--sky-blue);
+            border-color: var(--sky-blue);
+            color: white;
         }
 
         .search-dropdown {
@@ -994,35 +1150,33 @@
         <div class="modal-header">
             <div class="modal-actions">
                 <button class="close-btn" onclick="openVideoInfo()" title="Video Info">ℹ️ Info</button>
-                <button style="font-weight: bold;" class="close-btn" onclick="fixWhiteScreen()" title="Click here if the video shows a white screen">❓ FIX VIDEO</button>
+                <button class="close-btn" onclick="fixWhiteScreen()" title="Click here if the video shows a white screen" style="font-weight: bold;">❓ FIX VIDEO</button>
                 <button class="close-btn" onclick="openVideoInNewTab()" title="Open in new tab">💭 New Tab</button>
                 <button class="close-btn" id="copyUrlBtn" onclick="copyVideoUrl()" title="Copy video URL">🔗 Copy URL</button>
             </div>
             <button class="modal-close" onclick="closeVideo()" title="Close video">✕</button>
-        </div>            <div class="video-player-container" style="flex-direction: column; overflow-y: auto; height: 100%;">
-                <div style="display: flex; gap: 1rem; width: 100%; justify-content: center; flex-wrap: wrap; flex-shrink: 0;">
-                    <div class="video-player" style="flex: 1; min-width: 300px;">
-                        <iframe id="videoIframe" class="video-iframe" allowfullscreen></iframe>
-                    </div>
-                    <div id="playlistSidebar" class="playlist-sidebar" style="display:none; height: auto; max-height: 56.25vw; min-height: 300px;">
-                        <div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1rem;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;">
-                                <h3 style="margin:0;font-size:1.1rem;">Playlist Videos</h3>
-                                <button id="shufflePlaylistBtn" onclick="shufflePlaylist()" style="padding:0.5rem 1rem;border-radius:6px;background:var(--sky-blue);color:white;border:none;cursor:pointer;font-size:0.9rem;transition:background 0.3s;" onmouseover="this.style.background='var(--light-sky)'" onmouseout="this.style.background='var(--sky-blue)'">🔀 Shuffle</button>
-                            </div>
-                            <div style="display:flex;align-items:center;gap:0.5rem;">
-                                <button id="autoplayToggleBtn" onclick="toggleAutoplay()" style="padding:0.5rem 1rem;border-radius:6px;background:var(--text-muted);color:white;border:none;cursor:pointer;font-size:0.9rem;transition:background 0.3s;flex:1;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">▶️ Autoplay: OFF</button>
-                            </div>
-                        </div>
-                        <div id="playlistLoadingSpinner" style="display:none;text-align:center;padding:2rem;flex-direction:column;align-items:center;justify-content:center;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;">
-                            <div class="loading-spinner" style="margin:0 auto 1rem;"></div>
-                            <p style="color:var(--text-muted);font-size:0.9rem;margin:0;">Loading playlist videos...</p>
-                            <p id="playlistLoadingCount" style="color:var(--text-muted);font-size:0.8rem;margin-top:0.5rem;margin-bottom:0;"></p>
-                        </div>
-                        <div id="playlistVideos"></div>
-                    </div>
+        </div>        <div class="modal-body">
+            <div class="video-section">
+                <div class="video-player">
+                    <div id="videoIframe" class="video-iframe"></div>
                 </div>
             </div>
+            <div id="playlistSidebar" class="playlist-sidebar" style="display:none;">
+                <div class="playlist-header">
+                    <h3 style="margin:0;font-size:1.2rem;">Playlist Videos</h3>
+                    <div style="display:flex; gap: 0.75rem; align-items:center;">
+                        <button id="shufflePlaylistBtn" class="shuffle-btn" onclick="shufflePlaylist()">🔀 Shuffle</button>
+                        <button id="autoplayToggleBtn" class="toggle-btn" onclick="toggleAutoplay()">▶️ Autoplay: OFF</button>
+                    </div>
+                </div>
+                <div id="playlistLoadingSpinner" style="display:none;text-align:center;padding:2rem;flex-direction:column;align-items:center;justify-content:center;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;">
+                    <div class="loading-spinner" style="margin:0 auto 1rem;"></div>
+                    <p style="color:var(--text-muted);font-size:0.9rem;margin:0;">Loading playlist videos...</p>
+                    <p id="playlistLoadingCount" style="color:var(--text-muted);font-size:0.8rem;margin-top:0.5rem;margin-bottom:0;"></p>
+                </div>
+                <div id="playlistVideos"></div>
+            </div>
+        </div>
         </div>
     </div>
 
@@ -1138,8 +1292,9 @@
         <div style="font-size: 0.7rem;">Zane T.</div>
     </div>
 
+    <script src="https://www.youtube.com/iframe_api"></script>
     <script>
-    const API_BASE = "https://africanlanguage.academy/api/v1";
+    const SEARCH_API = "https://wetube.hyperphp.com/api/search.php";
     const HICKSVILLE_HANDLE = "@hicksvillevideoproductions1304";
     
     // --- MY FEED / SUBSCRIPTION LOGIC ---
@@ -1419,22 +1574,33 @@
         if (oldPlayer) oldPlayer.remove();
 
         if (currentPlayerType === 'youtube') {
-             // 1. Original YouTube Iframe
-             const newIframe = document.createElement('iframe');
+             const newIframe = document.createElement('div');
              newIframe.id = "videoIframe";
              newIframe.className = "video-iframe";
-             newIframe.allowFullscreen = true;
-             newIframe.referrerPolicy = "origin";
-             newIframe.allow = "autoplay; encrypted-media; picture-in-picture";
-             
-             const origin = window.location.origin === "null" ? "" : window.location.origin;
-             const cacheBuster = Math.floor(Math.random() * 1000000);
-             let src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1&origin=${origin}&_=${cacheBuster}`;
-             if (startTime > 0) src += `&start=${Math.floor(startTime)}`;
-             newIframe.src = src;
              container.insertBefore(newIframe, container.firstChild);
+
+             const playerVars = {
+                'autoplay': 1,
+                'rel': 0,
+                'modestbranding': 1,
+                'enablejsapi': 1,
+                'origin': window.location.origin === "null" ? "" : window.location.origin
+             };
+             if (startTime > 0) playerVars.start = Math.floor(startTime);
+
+             youtubePlayer = new YT.Player('videoIframe', {
+                height: '100%',
+                width: '100%',
+                videoId: videoId,
+                playerVars: playerVars,
+                events: {
+                    'onReady': (event) => {
+                        event.target.playVideo();
+                    },
+                    'onStateChange': onPlayerStateChange
+                }
+             });
         } else {
-             // 2. WeTube (ZaneCloud) - Custom Stream (Native Video Tag)
              const videoElement = document.createElement('video');
              videoElement.id = "myPlayer";
              videoElement.className = "video-iframe";
@@ -1443,51 +1609,24 @@
              videoElement.style.width = "100%";
              videoElement.style.height = "100%";
              videoElement.style.background = "black";
-             
-             // Set the source directly as requested
              videoElement.src = `https://wetube.zanecloud.ddns.net/stream?id=${videoId}`;
-
-             if (startTime > 0) {
-                 videoElement.currentTime = startTime;
-             }
-             
+             if (startTime > 0) videoElement.currentTime = startTime;
              container.insertBefore(videoElement, container.firstChild);
 
-             videoElement.ontimeupdate = () => {
-                 lastKnownTime = videoElement.currentTime;
-             };
-             
+             videoElement.ontimeupdate = () => { lastKnownTime = videoElement.currentTime; };
              videoElement.onended = () => {
-                 if (playlistAutoplayEnabled && currentPlaylistVideos.length > 0) {
-                     playNextVideoInPlaylist();
-                 }
+                 if (playlistAutoplayEnabled && currentPlaylistVideos.length > 0) playNextVideoInPlaylist();
              };
         }
     }
 
-    window.addEventListener('message', function(e) {
-        try {
-            // Attempt to parse Invidious/YouTube formatted messages
-            const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-            if (!data) return;
-
-            // Capture current time from YouTube or WeTube (Invidious)
-            if (data.event === 'timeupdate' && typeof data.time === 'number') {
-                lastKnownTime = data.time;
-            } else if (data.event === 'infoDelivery' && data.info && typeof data.info.currentTime === 'number') {
-                lastKnownTime = data.info.currentTime;
-            } else if (data.info && typeof data.info.currentTime === 'number') {
-                lastKnownTime = data.info.currentTime;
+    function onPlayerStateChange(event) {
+        if (event.data === YT.PlayerState.ENDED) {
+            if (playlistAutoplayEnabled && currentPlaylistVideos.length > 0) {
+                playNextVideoInPlaylist();
             }
-
-            // Check for 'ended' event
-            if (data && (data.event === 'ended' || data.info === 'ended')) {
-                if (playlistAutoplayEnabled && currentPlaylistVideos.length > 0) {
-                    playNextVideoInPlaylist();
-                }
-            }
-        } catch(err) {}
-    });
+        }
+    }
 
     function playNextVideoInPlaylist() {
         if (!currentPlaylistVideos || currentPlaylistVideos.length === 0) return;
@@ -1708,7 +1847,7 @@
     
             try {
                 const searchResults = await fetchData(
-                    `${API_BASE}/search?q=${encodeURIComponent(q)}&type=playlist&page=${page}&sort=${currentSort}`
+                    `${SEARCH_API}?q=${encodeURIComponent(q)}&type=playlist&page=${page}&sort=${currentSort}`
                 );
     
                                                     if (page === 1) {
@@ -1780,15 +1919,16 @@
             ld.style.display = "block";
             const modal = document.getElementById("videoModal");
             modal.style.display = "flex";
-            sidebar.style.display = "block";
-            sidebar.classList.add('loading');
-            playlistLoadingSpinner.style.display = "flex";
+            const modalContent = modal.querySelector('.modal-content');
+            modalContent.classList.add('has-playlist');
+            sidebar.style.display = "flex";
+            sidebar.classList.add('loading');            playlistLoadingSpinner.style.display = "flex";
             playlistVideosDiv.innerHTML = "";
             
             currentPlaylistVideos = [];
     
                     try {
-                        const playlistData = await fetchData(`${API_BASE}/playlists/${playlistId}?page=${page}`);
+                        const playlistData = await fetchData(`${SEARCH_API}?endpoint=playlist&id=${playlistId}`);
                         
                         if (page === 1) {
                             const trackRes = await trackEvent('/api/track/search', { query: `Opened Playlist: ${playlistData.title}` });
@@ -1849,7 +1989,7 @@
             currentVideoId = videoId;
             currentPlaylistIndex = index;
     
-            sidebar.style.display = "block";
+            sidebar.style.display = "flex";
             updateAutoplayButton();
             
             renderPlaylistSidebar();
@@ -1857,21 +1997,22 @@
             initYouTubePlayer(videoId);
         }
         
-        function renderPlaylistSidebar() {
-            const playlistVideosDiv = document.getElementById("playlistVideos");
-            playlistVideosDiv.innerHTML = currentPlaylistVideos.map((v, i) => {
-                const thumb = resolveThumbnail(v.thumbnail);
-                return `
-                <div class="playlist-video-item ${i === currentPlaylistIndex ? 'active' : ''}" onclick="playPlaylistVideo('${v.id}', ${i})">
-                    <img src="${thumb}" class="playlist-video-thumb" alt="${v.title}" onerror="getFallbackImage(this, '${v.id}')">
-                    <div class="playlist-video-info">
-                        <div class="playlist-video-title">${v.title}</div>
-                        <div class="playlist-video-channel">${v.channel}</div>
-                    </div>
+    function renderPlaylistSidebar() {
+        const playlistVideosDiv = document.getElementById("playlistVideos");
+        playlistVideosDiv.className = "playlist-videos-container";
+        playlistVideosDiv.innerHTML = currentPlaylistVideos.map((v, i) => {
+            const thumb = resolveThumbnail(v.thumbnail);
+            return `
+            <div class="playlist-video-item ${i === currentPlaylistIndex ? 'active' : ''}" onclick="playPlaylistVideo('${v.id}', ${i})">
+                <img src="${thumb}" class="playlist-video-thumb" alt="${v.title}" onerror="getFallbackImage(this, '${v.id}')">
+                <div class="playlist-video-info">
+                    <div class="playlist-video-title">${v.title}</div>
+                    <div class="playlist-video-channel">${v.channel}</div>
                 </div>
-                `;
-            }).join("");
-        }
+            </div>
+            `;
+        }).join("");
+    }
     
             function playPlaylistVideo(videoId, index) {
                 let title = "Unknown Video";
@@ -1957,7 +2098,7 @@
     
             try {
                 const searchResults = await fetchData(
-                    `${API_BASE}/search?q=${encodeURIComponent(q)}&type=video&page=${page}&sort=${currentSort}`
+                    `${SEARCH_API}?q=${encodeURIComponent(q)}&type=video&page=${page}&sort=${currentSort}`
                 );
     
                                                                             if (page === 1) {
@@ -2026,7 +2167,7 @@
     
             try {
                 const searchResults = await fetchData(
-                    `${API_BASE}/search?q=${encodeURIComponent(q)}&type=channel&page=${page}&sort=${currentSort}`
+                    `${SEARCH_API}?q=${encodeURIComponent(q)}&type=channel&page=${page}&sort=${currentSort}`
                 );
     
                                                     if (page === 1) {
@@ -2156,6 +2297,20 @@
              }
         }
         
+        // Grab title from search.php if missing or is a URL
+        if ((title === "Unknown Video" || title.startsWith("http")) && !videoObj) {
+            try {
+                const results = await fetchData(`${SEARCH_API}?q=${id}&type=video`);
+                if (results && results.length > 0) {
+                    const found = results.find(r => r.videoId === id) || results[0];
+                    title = found.title;
+                    if (!currentVideoThumbnail && found.videoThumbnails && found.videoThumbnails.length > 0) {
+                        currentVideoThumbnail = resolveThumbnail(found.videoThumbnails[0].url);
+                    }
+                }
+            } catch (e) {}
+        }
+        
         currentVideoTitle = title;
 
         trackEvent('/api/track/videoClick', { 
@@ -2165,10 +2320,13 @@
         });
 
         const modal = document.getElementById("videoModal");
+        const modalContent = modal.querySelector('.modal-content');
         const iframe = document.getElementById("videoIframe");
         const sidebar = document.getElementById("playlistSidebar");
         
         modal.style.display = "flex";
+        modalContent.classList.remove('has-playlist');
+        document.body.classList.add('modal-open');
         currentVideoId = id;
         sidebar.style.display = "none";
         currentPlaylistId = null;
@@ -2185,6 +2343,7 @@
 
     function closeVideo() {
         const modal = document.getElementById("videoModal");
+        const modalContent = modal.querySelector('.modal-content');
         const player = document.getElementById("videoIframe") || document.getElementById("myPlayer");
         
         if (youtubePlayer) {
@@ -2201,6 +2360,8 @@
         }
 
         modal.style.display = "none";
+        modalContent.classList.remove('has-playlist');
+        document.body.classList.remove('modal-open');
         currentVideoId = null;
         currentPlaylistId = null;
         currentPlaylistVideos = [];
@@ -2371,10 +2532,10 @@
         
         try {
             const subPromises = subs.map(sub => 
-                fetch(`${API_BASE}/channels/${sub.id}/videos?page=${page}`)
+                fetch(`${SEARCH_API}?endpoint=channel&id=${sub.id}`)
                     .then(res => res.json())
                     .then(data => {
-                        const vids = Array.isArray(data) ? data : (data.videos || []);
+                        const vids = Array.isArray(data) ? data : [];
                         return vids.slice(0, videosPerChannel);
                     })
                     .catch(e => [])
@@ -2386,7 +2547,7 @@
             if (page === 1 && combinedVideos.length > 0) {
                 const randomSourceVideo = combinedVideos[Math.floor(Math.random() * combinedVideos.length)];
                 try {
-                    const relatedData = await fetch(`${API_BASE}/videos/${randomSourceVideo.videoId}`).then(r => r.json());
+                    const relatedData = await fetch(`${SEARCH_API}?endpoint=video&id=${randomSourceVideo.videoId}`).then(r => r.json());
                     if (relatedData.recommendedVideos) {
                         const discoveredVideos = relatedData.recommendedVideos.slice(0, 10).map(item => ({...item, isDiscovery: true}));
                         combinedVideos = combinedVideos.concat(discoveredVideos);
@@ -2570,16 +2731,14 @@
         }
 
         try {
-            // Direct Invidious API call to get recent videos (sorted by new)
-            const channelVideosUrl = `${API_BASE}/channels/${channelId}/videos?page=${page}&sort_by=newest`;
+            // Use SEARCH_API with channel endpoint
+            const channelVideosUrl = `${SEARCH_API}?endpoint=channel&id=${channelId}`;
             
             let newVideos = [];
             try {
                 const results = await fetchData(channelVideosUrl);
                 if (Array.isArray(results)) {
                     newVideos = results;
-                } else if (results && results.videos) {
-                    newVideos = results.videos;
                 }
             } catch (e) {
                 console.warn("Channel fetch failed", e);
@@ -2742,7 +2901,7 @@
              const playlistVideosDiv = document.getElementById("playlistVideos");
      
              modal.style.display = "flex";
-             sidebar.style.display = "block";
+             sidebar.style.display = "flex";
              
              currentVideoId = state.videoId;
              currentPlaylistIndex = state.playlistIndex;
@@ -2824,7 +2983,7 @@
         document.getElementById('infoDescription').textContent = "Loading description...";
         
         try {
-            const data = await fetchData(`${API_BASE}/videos/${currentVideoId}`);
+            const data = await fetchData(`${SEARCH_API}?endpoint=video&id=${currentVideoId}`);
             document.getElementById('infoTitle').textContent = data.title;
             document.getElementById('infoChannel').textContent = data.author;
             document.getElementById('infoDescription').textContent = data.description || "No description available.";
